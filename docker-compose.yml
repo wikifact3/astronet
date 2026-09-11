@@ -1,0 +1,92 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: powerlink-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-powerlink_core}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-powerlink_core}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    networks:
+      - powerlink-network
+
+  timescaledb:
+    image: timescale/timescaledb:2.15.2-pg16
+    container_name: powerlink-timescaledb
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${TSDB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${TSDB_PASSWORD:-postgres}
+      POSTGRES_DB: ${TSDB_NAME:-powerlink_telemetry}
+    ports:
+      - "${TSDB_PORT:-5433}:5432"
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TSDB_USERNAME:-postgres}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    networks:
+      - powerlink-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: powerlink-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    networks:
+      - powerlink-network
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: powerlink-redis-commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - powerlink-network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: powerlink-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - powerlink-network
+
+networks:
+  powerlink-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  timescaledb_data:
+  redis_data:

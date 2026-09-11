@@ -1,0 +1,30 @@
+{
+  "name": "powerlink-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PowerLink Internet Services Platform Monorepo",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "clean": "turbo clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "type-check": "turbo type-check",
+    "db:generate": "pnpm -F api-gateway db:generate",
+    "db:migrate": "pnpm -F api-gateway db:migrate",
+    "db:seed": "pnpm -F api-gateway db:seed",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0"
+  },
+  "packageManager": "pnpm@8.15.0",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

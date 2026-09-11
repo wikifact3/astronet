@@ -1,0 +1,89 @@
+{
+  "nav": {
+    "home": "Home",
+    "plans": "Plans",
+    "coverage": "Coverage",
+    "connect": "Get Connected",
+    "signIn": "Sign In"
+  },
+  "hero": {
+    "title": "Fast, reliable internet for Nepal",
+    "subtitle": "Fiber to the home, wireless, and enterprise solutions. Check coverage in your ward and get connected in minutes.",
+    "ctaPrimary": "Check Coverage",
+    "ctaSecondary": "View Plans"
+  },
+  "plans": {
+    "title": "Choose your plan",
+    "subtitle": "Transparent pricing with VAT and Telecom Service Charge shown separately.",
+    "speed": "Speed",
+    "basePrice": "Base price",
+    "vat": "VAT (13%)",
+    "tsc": "TSC (1%)",
+    "total": "Total / month",
+    "fup": "Fair Usage",
+    "unlimited": "Unlimited",
+    "gb": "GB",
+    "orderNow": "Order This Plan",
+    "perMonth": "/month"
+  },
+  "coverage": {
+    "title": "Check fiber coverage",
+    "subtitle": "Enter your address to see if PowerLink is available in your ward.",
+    "province": "Province",
+    "district": "District",
+    "municipality": "Municipality",
+    "ward": "Ward",
+    "select": "Select…",
+    "check": "Check Availability",
+    "checking": "Checking…",
+    "available": "Available now",
+    "availableDesc": "Great news — PowerLink is available in your ward. You can order service right away.",
+    "comingSoon": "Coming soon",
+    "comingSoonDesc": "We plan to cover your area",
+    "notPlanned": "Not yet planned",
+    "notPlannedDesc": "We don't have coverage in this ward yet. Leave your details and we'll notify you when we do.",
+    "notifyMe": "Notify me",
+    "orderNow": "Order Now"
+  },
+  "wizard": {
+    "title": "Get connected",
+    "step": "Step {current} of {total}",
+    "stepAddress": "Address",
+    "stepPlan": "Plan",
+    "stepContact": "Contact",
+    "stepReview": "Review",
+    "stepConfirm": "Confirm",
+    "next": "Continue",
+    "back": "Back",
+    "submit": "Submit Request",
+    "submitting": "Submitting…",
+    "useGps": "Use my location",
+    "gpsUnavailable": "Location unavailable — please enter manually",
+    "successTitle": "Request received",
+    "successRef": "Your reference number is",
+    "successDesc": "Our team will contact you within 24 hours to schedule your installation.",
+    "fullName": "Full Name",
+    "phone": "Mobile Number",
+    "email": "Email (optional)",
+    "street": "Street / Landmark (optional)",
+    "notes": "Additional notes (optional)",
+    "reviewTitle": "Review your request",
+    "selectPlan": "Preferred plan (optional)",
+    "noPlan": "No preference",
+    "required": "This field is required"
+  },
+  "footer": {
+    "tagline": "PowerLink Internet Services — Fast, reliable connectivity across Nepal.",
+    "contact": "Contact",
+    "company": "Company",
+    "legal": "Legal",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "rights": "All rights reserved."
+  },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong. Please try again.",
+    "retry": "Retry"
+  }
+}
