@@ -7,7 +7,10 @@ import { HealthModule } from './modules/health/health.module';
 import { CoverageModule } from './modules/coverage/coverage.module';
 import { PlansModule } from './modules/plans/plans.module';
 import { LeadsModule } from './modules/leads/leads.module';
-//import { AuthModule } from './modules/auth/auth.module';
+import { CustomersModule } from './modules/customers/customers.module';
+import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
+import { SmsModule } from './modules/sms/sms.module';
+import { AuthModule } from './modules/auth/auth.module';
 //import { PaymentsModule } from './modules/payments/payments.module'; //add AuthModule, PaymentsModule, TicketsModule one at a time as we build them
 //import { TicketsModule } from './modules/tickets/tickets.module';
 import appConfig from './config/app.config';
@@ -27,13 +30,11 @@ import redisConfig from './config/redis.config';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-
         host: configService.get<string>('database.host'),
         port: configService.get<number>('database.port', 5432),
         username: configService.get<string>('database.username'),
         password: configService.get<string>('database.password'),
         database: configService.get<string>('database.database'),
-
         autoLoadEntities: true,
 
         migrations: [
@@ -63,7 +64,10 @@ import redisConfig from './config/redis.config';
     CoverageModule,
     PlansModule,
     LeadsModule,
-	//AuthModule, //add AuthModule, PaymentsModule, TicketsModule one at a time as we build them
+    CustomersModule,
+    SubscriptionsModule,
+    SmsModule,
+    AuthModule,
     //PaymentsModule,//add AuthModule, PaymentsModule, TicketsModule one at a time as we build them
     //TicketsModule, //add AuthModule, PaymentsModule, TicketsModule one at a time as we build them
   ],

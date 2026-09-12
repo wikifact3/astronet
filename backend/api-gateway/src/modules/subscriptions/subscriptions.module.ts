@@ -1,0 +1,15 @@
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { SubscriptionsController } from './subscriptions.controller';
+import { SubscriptionsService } from './subscriptions.service';
+import { Subscription } from '../../database/entities/subscription.entity';
+import { Account } from '../../database/entities/account.entity';
+import { Plan } from '../../database/entities/plan.entity';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([Subscription, Account, Plan])],
+  controllers: [SubscriptionsController],
+  providers: [SubscriptionsService],
+  exports: [SubscriptionsService],
+})
+export class SubscriptionsModule {}

@@ -15,9 +15,11 @@ import { AuditLog } from './entities/audit-log.entity';
 import { CoverageGeoData } from './entities/coverage-geo-data.entity';
 import { Notification } from './entities/notification.entity';
 import { Lead } from './entities/lead.entity';
+import { OtpCode } from './entities/otp-code.entity';
 import { InitialSchema1740000000000 } from './migrations/1740000000000-InitialSchema';
 import { AddUniqueConstraints1740000000001 } from './migrations/1740000000001-AddUniqueConstraints';
 import { CreateLeads1740000000002 } from './migrations/1740000000002-CreateLeads';
+import { CreateOtpCodes1740000000003 } from './migrations/1740000000003-CreateOtpCodes';
 
 config();
 
@@ -31,12 +33,13 @@ const AppDataSource = new DataSource({
   entities: [
     Customer, Account, Plan, Subscription, Invoice, Payment,
     Ticket, StaffUser, Role, Permission, Device, AuditLog,  
-    CoverageGeoData, Notification, Lead,
+    CoverageGeoData, Notification, Lead, OtpCode,
   ],
   migrations: [
     InitialSchema1740000000000,
     AddUniqueConstraints1740000000001,
     CreateLeads1740000000002,
+    CreateOtpCodes1740000000003,
   ],
   synchronize: false,
   logging: process.env.NODE_ENV === 'development',

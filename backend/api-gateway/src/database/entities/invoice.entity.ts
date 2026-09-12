@@ -1,8 +1,7 @@
-import { Entity, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from './base.entity';
 import { Account } from './account.entity';
 import { Subscription } from './subscription.entity';
-import { Payment } from './payment.entity';
 
 export enum InvoiceStatus {
   DRAFT = 'draft',
@@ -29,7 +28,7 @@ export class Invoice extends BaseEntity {
   @Column({ name: 'account_id' })
   accountId: string;
 
-  @ManyToOne(() => Subscription, subscription => subscription.invoices)
+  @ManyToOne(() => Subscription)
   @JoinColumn({ name: 'subscription_id' })
   subscription: Subscription;
 
@@ -51,29 +50,31 @@ export class Invoice extends BaseEntity {
   @Column({ name: 'total_amount', type: 'decimal', precision: 12, scale: 2 })
   totalAmount: number;
 
-  @Column({ 
+  @Column({
     type: 'enum',
     enum: InvoiceStatus,
-    default: InvoiceStatus.DRAFT 
+    enumName: 'invoice_status',
+    default: InvoiceStatus.DRAFT,
   })
   status: InvoiceStatus;
 
-  @Column({ 
-    name: 'ird_sync_status', 
+  @Column({
+    name: 'ird_sync_status',
     type: 'enum',
     enum: IrdSyncStatus,
-    default: IrdSyncStatus.NOT_APPLICABLE 
+    enumName: 'ird_sync_status',
+    default: IrdSyncStatus.NOT_APPLICABLE,
   })
   irdSyncStatus: IrdSyncStatus;
 
-  @Column({ name: 'ird_sync_attempted_at', nullable: true })
-  irdSyncAttemptedAt: Date;
+  @Column({ name: 'ird_sync_attempted_at', type: 'timestamptz', nullable: true })
+  irdSyncAttemptedAt: Date | null;
 
   @Column({ name: 'ird_sync_error', type: 'text', nullable: true })
-  irdSyncError: string;
+  irdSyncError: string | null;
 
-  @Column({ name: 'pdf_url', length: 500, nullable: true })
-  pdfUrl: string;
+  @Column({ name: 'pdf_url', type: 'varchar', length: 500, nullable: true })
+  pdfUrl: string | null;
 
   @Column({ name: 'issued_at', type: 'timestamptz', default: () => 'NOW()' })
   issuedAt: Date;
@@ -81,19 +82,16 @@ export class Invoice extends BaseEntity {
   @Column({ name: 'due_date', type: 'date' })
   dueDate: Date;
 
-  @Column({ name: 'paid_at', nullable: true })
-  paidAt: Date;
+  @Column({ name: 'paid_at', type: 'timestamptz', nullable: true })
+  paidAt: Date | null;
 
   @Column({ type: 'text', nullable: true })
-  notes: string;
+  notes: string | null;
 
   @ManyToOne(() => Invoice, { nullable: true })
   @JoinColumn({ name: 'original_invoice_id' })
-  originalInvoice: Invoice;
+  originalInvoice: Invoice | null;
 
-  @Column({ name: 'original_invoice_id', nullable: true })
-  originalInvoiceId: string;
-
-  @OneToMany(() => Payment, payment => payment.invoice)
-  payments: Payment[];
+  @Column({ name: 'original_invoice_id', type: 'uuid', nullable: true })
+  originalInvoiceId: string | null;
 }

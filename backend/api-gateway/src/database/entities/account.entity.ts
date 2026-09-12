@@ -1,7 +1,6 @@
-import { Entity, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from './base.entity';
 import { Customer } from './customer.entity';
-import { Subscription } from './subscription.entity';
 
 export enum AccountStatus {
   LEAD = 'lead',
@@ -20,7 +19,7 @@ export enum AccountType {
 
 @Entity({ schema: 'powerlink_core', name: 'accounts' })
 export class Account extends BaseEntity {
-  @ManyToOne(() => Customer, customer => customer.accounts)
+  @ManyToOne(() => Customer)
   @JoinColumn({ name: 'customer_id' })
   customer: Customer;
 
@@ -29,45 +28,44 @@ export class Account extends BaseEntity {
 
   @ManyToOne(() => Account, { nullable: true })
   @JoinColumn({ name: 'parent_account_id' })
-  parentAccount: Account;
+  parentAccount: Account | null;
 
-  @Column({ name: 'parent_account_id', nullable: true })
-  parentAccountId: string;
+  @Column({ name: 'parent_account_id', type: 'uuid', nullable: true })
+  parentAccountId: string | null;
 
-  @Column({ 
-    name: 'account_type', 
+  @Column({
+    name: 'account_type',
     type: 'enum',
     enum: AccountType,
-    default: AccountType.RETAIL 
+    enumName: 'account_type',
+    default: AccountType.RETAIL,
   })
   accountType: AccountType;
 
-  @Column({ 
+  @Column({
     type: 'enum',
     enum: AccountStatus,
-    default: AccountStatus.LEAD 
+    enumName: 'account_status',
+    default: AccountStatus.LEAD,
   })
   status: AccountStatus;
 
   @Column({ name: 'billing_address', type: 'jsonb', nullable: true })
-  billingAddress: object;
+  billingAddress: object | null;
 
   @Column({ name: 'installation_address', type: 'jsonb', nullable: true })
-  installationAddress: object;
+  installationAddress: object | null;
 
   @Column({ name: 'gps_coordinates', type: 'jsonb', nullable: true })
-  gpsCoordinates: object;
+  gpsCoordinates: object | null;
 
-  @Column({ name: 'referral_code', length: 20, unique: true, nullable: true })
-  referralCode: string;
+  @Column({ name: 'referral_code', type: 'varchar', length: 20, unique: true, nullable: true })
+  referralCode: string | null;
 
   @ManyToOne(() => Account, { nullable: true })
   @JoinColumn({ name: 'referred_by' })
-  referredBy: Account;
+  referredBy: Account | null;
 
-  @Column({ name: 'referred_by', nullable: true })
-  referredById: string;
-
-  @OneToMany(() => Subscription, subscription => subscription.account)
-  subscriptions: Subscription[];
+  @Column({ name: 'referred_by', type: 'uuid', nullable: true })
+  referredById: string | null;
 }

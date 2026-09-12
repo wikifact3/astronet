@@ -1,8 +1,7 @@
-import { Entity, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from './base.entity';
 import { Account } from './account.entity';
 import { Plan } from './plan.entity';
-import { Invoice } from './invoice.entity';
 
 export enum FupTier {
   NORMAL = 'normal',
@@ -12,7 +11,7 @@ export enum FupTier {
 
 @Entity({ schema: 'powerlink_core', name: 'subscriptions' })
 export class Subscription extends BaseEntity {
-  @ManyToOne(() => Account, account => account.subscriptions)
+  @ManyToOne(() => Account)
   @JoinColumn({ name: 'account_id' })
   account: Account;
 
@@ -35,11 +34,12 @@ export class Subscription extends BaseEntity {
   @Column({ name: 'validity_end', type: 'date' })
   validityEnd: Date;
 
-  @Column({ 
-    name: 'fup_tier', 
+  @Column({
+    name: 'fup_tier',
     type: 'enum',
     enum: FupTier,
-    default: FupTier.NORMAL 
+    enumName: 'fup_tier',
+    default: FupTier.NORMAL,
   })
   fupTier: FupTier;
 
@@ -54,7 +54,4 @@ export class Subscription extends BaseEntity {
 
   @Column({ name: 'billing_cycle', default: 'monthly', length: 10 })
   billingCycle: string;
-
-  @OneToMany(() => Invoice, invoice => invoice.subscription)
-  invoices: Invoice[];
 }

@@ -3,6 +3,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import  helmet from 'helmet';
 import  compression from 'compression';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -13,6 +14,7 @@ async function bootstrap() {
   // Security middleware
   app.use(helmet());
   app.use(compression());
+  app.use(cookieParser());
 
   // Enable CORS
   app.enableCors({

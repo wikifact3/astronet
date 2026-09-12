@@ -1,6 +1,5 @@
-import { Entity, Column, OneToMany } from 'typeorm';
+import { Entity, Column } from 'typeorm';
 import { BaseEntity } from './base.entity';
-import { Account } from './account.entity';
 
 export enum KycStatus {
   PENDING = 'pending',
@@ -10,33 +9,31 @@ export enum KycStatus {
 
 @Entity({ schema: 'powerlink_core', name: 'customers' })
 export class Customer extends BaseEntity {
-  @Column({ unique: true, length: 20 })
+  @Column({ type: 'varchar', length: 20, unique: true })
   phone: string;
 
-  @Column({ nullable: true, unique: true, length: 255 })
-  email: string;
+  @Column({ type: 'varchar', length: 255, nullable: true, unique: true })
+  email: string | null;
 
-  @Column({ name: 'full_name', length: 255 })
+  @Column({ name: 'full_name', type: 'varchar', length: 255 })
   fullName: string;
 
-  @Column({ name: 'preferred_language', default: 'en', length: 10 })
+  @Column({ name: 'preferred_language', type: 'varchar', length: 10, default: 'en' })
   preferredLanguage: string;
 
-  @Column({ 
-    name: 'kyc_status', 
+  @Column({
+    name: 'kyc_status',
     type: 'enum',
     enum: KycStatus,
-    default: KycStatus.PENDING 
+    enumName: 'kyc_status',
+    default: KycStatus.PENDING,
   })
   kycStatus: KycStatus;
 
-  @Column({ 
-    name: 'notification_preferences', 
+  @Column({
+    name: 'notification_preferences',
     type: 'jsonb',
-    default: { sms: true, email: true, in_app: true }
+    default: { sms: true, email: true, in_app: true },
   })
   notificationPreferences: object;
-
-  @OneToMany(() => Account, account => account.customer)
-  accounts: Account[];
 }
