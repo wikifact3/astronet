@@ -1,0 +1,66 @@
+{
+  "nav": {
+    "brand": "PowerLink",
+    "signOut": "Sign out"
+  },
+  "login": {
+    "title": "Sign in to your account",
+    "subtitle": "Enter your mobile number and we'll send you a verification code.",
+    "phoneLabel": "Mobile number",
+    "phonePlaceholder": "98XXXXXXXX",
+    "sendCode": "Send code",
+    "sending": "Sending…",
+    "otpTitle": "Enter verification code",
+    "otpSubtitle": "We sent a 6-digit code to {phone}.",
+    "otpLabel": "Verification code",
+    "otpPlaceholder": "000000",
+    "verify": "Verify",
+    "verifying": "Verifying…",
+    "changePhone": "Use a different number",
+    "resendIn": "Resend in {seconds}s",
+    "resend": "Resend code",
+    "invalidPhone": "Enter a valid 10-digit Nepali mobile number",
+    "invalidOtp": "Code must be 6 digits"
+  },
+  "dashboard": {
+    "greeting": "Welcome back, {name}",
+    "greetingFallback": "Welcome back",
+    "subtitle": "Here is your account summary.",
+    "planSection": "Your plan",
+    "planName": "Plan",
+    "speed": "Speed",
+    "monthlyTotal": "Monthly total",
+    "validitySection": "Validity",
+    "validityStart": "Started",
+    "validityEnd": "Renews on",
+    "daysRemaining": "{days} days remaining",
+    "daysRemainingOne": "1 day remaining",
+    "expired": "Expired",
+    "fupSection": "Fair usage",
+    "fupThreshold": "Monthly allowance",
+    "graceSection": "Promise to Pay",
+    "graceUsed": "Used this year",
+    "graceRemaining": "Remaining",
+    "graceExplanation": "Use Promise to Pay to extend your service by 2 days when you're short on payment. Limit resets yearly.",
+    "accountSection": "Account",
+    "accountStatus": "Status",
+    "customerSince": "Customer since"
+  },
+  "status": {
+    "active": "Active",
+    "suspended": "Suspended",
+    "churned": "Churned",
+    "pending_activation": "Pending activation",
+    "lead": "Lead"
+  },
+  "fupTier": {
+    "normal": "Normal",
+    "throttle_l1": "Reduced (Level 1)",
+    "throttle_l2": "Reduced (Level 2)"
+  },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong.",
+    "retry": "Retry"
+  }
+}

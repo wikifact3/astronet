@@ -9,6 +9,21 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 const REFRESH_COOKIE = 'powerlink_refresh';
 const REFRESH_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
+function cookieOptions() {
+  const isProd = process.env.NODE_ENV === 'production';
+  // In dev behind Codespaces the API is served over HTTPS on *.app.github.dev,
+  // so Secure=true works and SameSite=None is required for cross-origin XHR.
+  // In production, api.powerlink.com.np and portal.powerlink.com.np share a
+  // registrable domain, so SameSite=Lax is fine and stricter.
+  return {
+    httpOnly: true,
+    secure: isProd || process.env.CODESPACE_NAME !== undefined,
+    sameSite: isProd ? ('lax' as const) : ('none' as const),
+    path: '/',
+    maxAge: REFRESH_MAX_AGE_MS,
+  };
+}
+
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -30,13 +45,7 @@ export class AuthController {
   ) {
     const result = await this.authService.verifyOtp(dto.phone, dto.otp);
 
-    res.cookie(REFRESH_COOKIE, result.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: REFRESH_MAX_AGE_MS,
-      path: '/v1/auth',
-    });
+    res.cookie(REFRESH_COOKIE, result.refreshToken, cookieOptions());
 
     const { refreshToken, ...body } = result;
     return body;
@@ -50,13 +59,7 @@ export class AuthController {
 
     const tokens = await this.authService.refresh(token);
 
-    res.cookie(REFRESH_COOKIE, tokens.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: REFRESH_MAX_AGE_MS,
-      path: '/v1/auth',
-    });
+    res.cookie(REFRESH_COOKIE, tokens.refreshToken, cookieOptions());
 
     return { accessToken: tokens.accessToken };
   }
@@ -64,7 +67,11 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie(REFRESH_COOKIE, { path: '/v1/auth' });
+    res.clearCookie(REFRESH_COOKIE, {
+      path: '/',
+      sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'none',
+      secure: process.env.NODE_ENV === 'production' || !!process.env.CODESPACE_NAME,
+    });
     return { ok: true };
   }
 }

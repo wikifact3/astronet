@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import  helmet from 'helmet';
-import  compression from 'compression';
+import helmet from 'helmet';
+import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
@@ -11,32 +11,44 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
 
-  // Security middleware
   app.use(helmet());
   app.use(compression());
   app.use(cookieParser());
 
-  // Enable CORS
+  const allowed = [
+    ...configService.get<string>('CORS_ORIGINS', '').split(',').filter(Boolean),
+    'http://localhost:3000',
+    'http://localhost:3001',
+    process.env.CODESPACE_NAME &&
+      `https://${process.env.CODESPACE_NAME}-3000.app.github.dev`,
+    process.env.CODESPACE_NAME &&
+      `https://${process.env.CODESPACE_NAME}-3001.app.github.dev`,
+  ].filter(Boolean) as string[];
+
   app.enableCors({
-    origin: configService.get('CORS_ORIGINS', '').split(','),
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (allowed.includes(origin)) return cb(null, true);
+      return cb(new Error(`CORS: origin ${origin} not allowed`), false);
+    },
     credentials: true,
   });
 
-  // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-    })
+    }),
   );
 
-  // Global prefix
   app.setGlobalPrefix('v1');
 
-  const port = configService.get('PORT', 8080);
+  const port = configService.get<number>('app.port', 8080);
   await app.listen(port);
 
-  logger.log(`🚀 Application running on port ${port}`);
+  logger.log(`🚀 PowerLink API running on http://localhost:${port}/v1`);
+  logger.log(`   CORS allowed: ${allowed.join(', ')}`);
 }
+
 bootstrap();
