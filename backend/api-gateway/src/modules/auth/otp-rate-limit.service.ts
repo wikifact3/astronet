@@ -2,7 +2,7 @@ import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import { OtpCode } from '../../database/entities/otp-code.entity';
+import { OtpRequestLog, OtpRequestOutcome } from '../../database/entities/otp-request-log.entity';
 
 export interface RateLimitContext {
   phone: string;
@@ -10,25 +10,20 @@ export interface RateLimitContext {
 }
 
 /**
- * Rate limiting for OTP dispatch. Three windows, all sourced from the
- * otp_codes table (indexed on phone, ip_address, created_at):
+ * Rate limiting for OTP dispatch. Every request — whether it results in an
+ * SMS or not — is logged to otp_request_log, and the counters read from
+ * that table. This closes the bypass where unregistered numbers could be
+ * probed without consuming rate limit budget.
  *
- *  - per-phone  — stops a single attacker hammering one number
- *  - per-ip     — stops a single host cycling through many numbers
- *  - global     — stops a distributed flood, protects SMS provider quota
- *
- * All counts use a rolling 1-hour window. Not atomic across concurrent
- * requests, but for OTP the practical rate is low enough that a small
- * overshoot on a burst is acceptable. When Redis is wired in Phase 2,
- * swap the internals behind the same `check()` signature.
+ * Windows: rolling 1 hour, indexed by (phone, created_at) and (ip, created_at).
  */
 @Injectable()
 export class OtpRateLimitService {
   private readonly logger = new Logger(OtpRateLimitService.name);
 
   constructor(
-    @InjectRepository(OtpCode)
-    private readonly otpRepo: Repository<OtpCode>,
+    @InjectRepository(OtpRequestLog)
+    private readonly logRepo: Repository<OtpRequestLog>,
     private readonly configService: ConfigService,
   ) {}
 
@@ -36,25 +31,24 @@ export class OtpRateLimitService {
     const cfg = this.configService.get('app.otp.rateLimits');
     const windowStart = new Date(Date.now() - 60 * 60 * 1000);
 
-    // Run all three counts in parallel
     const [phoneCount, ipCount, globalCount] = await Promise.all([
-      this.otpRepo
-        .createQueryBuilder('o')
-        .where('o.phone = :phone', { phone: ctx.phone })
-        .andWhere('o.created_at >= :windowStart', { windowStart })
+      this.logRepo
+        .createQueryBuilder('l')
+        .where('l.phone = :phone', { phone: ctx.phone })
+        .andWhere('l.created_at >= :windowStart', { windowStart })
         .getCount(),
 
       ctx.ip
-        ? this.otpRepo
-            .createQueryBuilder('o')
-            .where('o.ip_address = :ip', { ip: ctx.ip })
-            .andWhere('o.created_at >= :windowStart', { windowStart })
+        ? this.logRepo
+            .createQueryBuilder('l')
+            .where('l.ip_address = :ip', { ip: ctx.ip })
+            .andWhere('l.created_at >= :windowStart', { windowStart })
             .getCount()
         : Promise.resolve(0),
 
-      this.otpRepo
-        .createQueryBuilder('o')
-        .where('o.created_at >= :windowStart', { windowStart })
+      this.logRepo
+        .createQueryBuilder('l')
+        .where('l.created_at >= :windowStart', { windowStart })
         .getCount(),
     ]);
 
@@ -86,6 +80,29 @@ export class OtpRateLimitService {
         { error: { code: 'OTP_GLOBAL_LIMIT', message: 'OTP service is temporarily rate-limited. Try again shortly.' } },
         HttpStatus.SERVICE_UNAVAILABLE,
       );
+    }
+  }
+
+  /**
+   * Record the outcome of a request. Call this for every request that
+   * passes `check()` — even ones that end in not_registered, so they count
+   * against the limit.
+   */
+  async record(
+    ctx: RateLimitContext,
+    outcome: OtpRequestOutcome,
+  ): Promise<void> {
+    try {
+      await this.logRepo.save(
+        this.logRepo.create({
+          phone: ctx.phone,
+          ipAddress: ctx.ip,
+          outcome,
+        }),
+      );
+    } catch (err) {
+      // Never let logging failure break the request — just note it.
+      this.logger.error(`Failed to record OTP request log: ${(err as Error).message}`);
     }
   }
 }

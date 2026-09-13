@@ -6,7 +6,7 @@ function parseTrustProxy(raw: string | undefined): boolean | number | string {
   if (raw === 'false') return false;
   const n = Number(raw);
   if (!Number.isNaN(n) && Number.isInteger(n) && n >= 0) return n;
-  return raw; // e.g. 'loopback', 'linklocal', or a CIDR string
+  return raw;
 }
 
 export default registerAs('app', () => ({
@@ -19,6 +19,10 @@ export default registerAs('app', () => ({
   corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:3000,http://localhost:3001')
     .split(',')
     .map((s) => s.trim()),
+
+  // Where to send users who try to log in but aren't registered yet.
+  marketingApplyUrl:
+    process.env.MARKETING_APPLY_URL || 'http://localhost:3000/en/connect',
 
   jwt: {
     secret: process.env.JWT_SECRET || 'dev-jwt-secret-change-me-in-production',

@@ -21,9 +21,6 @@ function cookieOptions() {
 }
 
 function ctxOf(req: Request): RequestContext {
-  // req.ip is trustworthy ONLY when 'trust proxy' is configured correctly.
-  // With TRUST_PROXY=loopback (Codespaces) or =1 (LB), Express peels the
-  // spoofable X-Forwarded-For entries and returns the real client address.
   const ip = req.ip ?? null;
   const ua = req.headers['user-agent']?.toString().slice(0, 500) ?? null;
   return { ip, userAgent: ua };
@@ -36,6 +33,10 @@ export class AuthController {
   @Post('otp/request')
   @HttpCode(HttpStatus.OK)
   async requestOtp(@Body() dto: RequestOtpDto, @Req() req: Request) {
+    // Returns either:
+    //   { status: 'sent', expiresIn: 300 }
+    //   { status: 'not_registered', message, applyUrl, phone }
+    // Both are HTTP 200; the portal decides what to render.
     return this.authService.requestOtp(dto.phone, ctxOf(req));
   }
 

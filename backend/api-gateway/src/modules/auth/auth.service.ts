@@ -1,5 +1,5 @@
 import {
-  Injectable, UnauthorizedException, BadRequestException, Logger,
+  Injectable, UnauthorizedException, Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, IsNull } from 'typeorm';
@@ -11,6 +11,7 @@ import { Customer } from '../../database/entities/customer.entity';
 import { RefreshToken } from '../../database/entities/refresh-token.entity';
 import { SmsService } from '../sms/sms.service';
 import { OtpRateLimitService } from './otp-rate-limit.service';
+import { OtpRequestOutcome } from '../../database/entities/otp-request-log.entity';
 import { JwtPayload, RefreshPayload } from './auth.types';
 
 export interface TokenPair {
@@ -33,6 +34,20 @@ export interface RequestContext {
   userAgent: string | null;
 }
 
+export interface OtpRequestResult {
+  status: 'sent';
+  expiresIn: number;
+}
+
+export interface OtpNotRegisteredResult {
+  status: 'not_registered';
+  message: string;
+  applyUrl: string;
+  phone: string;
+}
+
+export type OtpRequestResponse = OtpRequestResult | OtpNotRegisteredResult;
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -51,18 +66,41 @@ export class AuthService {
   ) {}
 
   // ------------------------------------------------------------------
-  // OTP
+  // OTP request
   // ------------------------------------------------------------------
 
   async requestOtp(
     phone: string,
     ctx: RequestContext,
-  ): Promise<{ expiresIn: number }> {
+  ): Promise<OtpRequestResponse> {
+    // Every request hits the rate limiter first, then gets logged —
+    // whether it results in an SMS or not. This is what closes the
+    // "unregistered numbers bypass rate limits" hole.
     await this.rateLimit.check({ phone, ip: ctx.ip });
+
+    const known = await this.customerRepo.exist({ where: { phone } });
+
+    this.logger.log(
+      `OTP request phone=${phone} ip=${ctx.ip ?? '-'} known_customer=${known}`,
+    );
+
+    if (!known) {
+      await this.rateLimit.record(
+        { phone, ip: ctx.ip },
+        OtpRequestOutcome.NOT_REGISTERED,
+      );
+      const applyUrl = this.configService.get<string>('app.marketingApplyUrl');
+      return {
+        status: 'not_registered',
+        message:
+          'This number is not registered with PowerLink yet. Apply for a new connection to get started.',
+        applyUrl: `${applyUrl}?phone=${encodeURIComponent(phone)}`,
+        phone,
+      };
+    }
 
     const cfg = this.configService.get('app.otp');
 
-    // Invalidate any outstanding unconsumed codes for this phone
     await this.otpRepo.update(
       { phone, consumedAt: IsNull() },
       { consumedAt: new Date() },
@@ -82,12 +120,19 @@ export class AuthService {
       }),
     );
 
-    await this.sms.send(
-      phone,
-      `Your PowerLink verification code is ${code}. Valid for ${cfg.expiresInSeconds / 60} minutes.`,
-    );
+    try {
+      await this.sms.send(
+        phone,
+        `Your PowerLink verification code is ${code}. Valid for ${cfg.expiresInSeconds / 60} minutes.`,
+      );
+    } catch (err) {
+      await this.rateLimit.record({ phone, ip: ctx.ip }, OtpRequestOutcome.SEND_FAILED);
+      throw err;
+    }
 
-    return { expiresIn: cfg.expiresInSeconds };
+    await this.rateLimit.record({ phone, ip: ctx.ip }, OtpRequestOutcome.SENT);
+
+    return { status: 'sent', expiresIn: cfg.expiresInSeconds };
   }
 
   async verifyOtp(
@@ -111,13 +156,11 @@ export class AuthService {
     }
 
     if (otp.attemptCount >= cfg.maxAttempts) {
-      // Burn the record so subsequent attempts hit "expired or not found"
       await this.otpRepo.update({ id: otp.id }, { consumedAt: new Date() });
       throw new UnauthorizedException('Too many attempts. Request a new OTP.');
     }
 
     if (!this.safeCompare(otp.code, code)) {
-      // Atomic increment — avoid read-modify-write race
       await this.otpRepo
         .createQueryBuilder()
         .update(OtpCode)
@@ -129,20 +172,14 @@ export class AuthService {
 
     await this.otpRepo.update({ id: otp.id }, { consumedAt: new Date() });
 
-    // Find or create customer
-    let customer = await this.customerRepo.findOne({ where: { phone } });
-    let isNewUser = false;
-
+    // Option C: an OTP can only exist for a known customer, so this
+    // must resolve. If not, it means the customer was deleted between
+    // request and verify — treat as unregistered.
+    const customer = await this.customerRepo.findOne({ where: { phone } });
     if (!customer) {
-      customer = await this.customerRepo.save(
-        this.customerRepo.create({
-          phone,
-          fullName: '',
-          preferredLanguage: 'en',
-          kycStatus: 'pending' as any,
-        }),
+      throw new UnauthorizedException(
+        'This number is no longer registered. Please apply for a new connection.',
       );
-      isNewUser = true;
     }
 
     const tokens = await this.issueTokenPair(customer, null, ctx);
@@ -155,7 +192,7 @@ export class AuthService {
         fullName: customer.fullName,
         preferredLanguage: customer.preferredLanguage,
       },
-      isNewUser,
+      isNewUser: false,
     };
   }
 
@@ -184,12 +221,10 @@ export class AuthService {
 
     const row = await this.refreshRepo.findOne({ where: { jti: payload.jti } });
     if (!row) {
-      // Unknown jti. Either forged or the row was already pruned.
       this.logger.warn(`Refresh: unknown jti=${payload.jti}`);
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    // Revoked (logout, prior reuse-detection, or admin action)
     if (row.revokedAt) {
       this.logger.warn(
         `Refresh: revoked token reused jti=${row.jti} family=${row.familyId}`,
@@ -197,7 +232,6 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token has been revoked');
     }
 
-    // Reuse detection: this token was already exchanged once
     if (row.usedAt) {
       this.logger.error(
         `🚨 Refresh token reuse detected: jti=${row.jti} family=${row.familyId} customer=${row.customerId}`,
@@ -206,7 +240,6 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token reuse detected');
     }
 
-    // Expired
     if (row.expiresAt.getTime() < Date.now()) {
       throw new UnauthorizedException('Refresh token expired');
     }
@@ -217,7 +250,6 @@ export class AuthService {
       throw new UnauthorizedException('Customer no longer exists');
     }
 
-    // Mark current as used, then issue a new pair in the same family
     row.usedAt = new Date();
     await this.refreshRepo.save(row);
 
@@ -235,7 +267,6 @@ export class AuthService {
         audience: this.configService.get<string>('app.jwt.audience'),
       });
     } catch {
-      // Even an invalid/expired token is fine — nothing to revoke.
       return;
     }
 
@@ -320,12 +351,15 @@ export class AuthService {
   }
 
   private computeExpiry(duration: string): Date {
-    // Supports: Ns, Nm, Nh, Nd
     const m = /^(\d+)([smhd])$/.exec(duration);
     if (!m) throw new Error(`Unsupported duration format: ${duration}`);
     const n = parseInt(m[1], 10);
     const unit = m[2];
-    const ms = unit === 's' ? 1000 : unit === 'm' ? 60_000 : unit === 'h' ? 3_600_000 : 86_400_000;
+    const ms =
+      unit === 's' ? 1000
+        : unit === 'm' ? 60_000
+        : unit === 'h' ? 3_600_000
+        : 86_400_000;
     return new Date(Date.now() + n * ms);
   }
 

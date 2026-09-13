@@ -10,6 +10,7 @@ import { Step3Contact } from './steps/Step3Contact';
 import { Step4Review } from './steps/Step4Review';
 
 const STORAGE_KEY = 'pl.leadDraftToken';
+const PHONE_RE = /^(98|97|96)\d{8}$/;
 
 interface Props {
   locale: Locale;
@@ -56,6 +57,12 @@ export function ConnectionWizard({ locale, dict, plans }: Props) {
   useEffect(() => {
     const planFromQuery = params.get('plan');
     if (planFromQuery) setState((s) => ({ ...s, planId: planFromQuery }));
+
+    // Deep-link from portal: /en/connect?phone=98XXXXXXXX
+    const phoneFromQuery = params.get('phone');
+    if (phoneFromQuery && PHONE_RE.test(phoneFromQuery)) {
+      setState((s) => ({ ...s, phone: phoneFromQuery }));
+    }
 
     const token = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
     if (!token) return;

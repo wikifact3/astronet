@@ -10,11 +10,12 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { OtpCode } from '../../database/entities/otp-code.entity';
 import { Customer } from '../../database/entities/customer.entity';
 import { RefreshToken } from '../../database/entities/refresh-token.entity';
+import { OtpRequestLog } from '../../database/entities/otp-request-log.entity';
 import { SmsModule } from '../sms/sms.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([OtpCode, Customer, RefreshToken,]),
+    TypeOrmModule.forFeature([OtpCode, Customer, RefreshToken, OtpRequestLog]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

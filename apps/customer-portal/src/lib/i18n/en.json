@@ -22,15 +22,19 @@
     "invalidPhone": "Enter a valid 10-digit Nepali mobile number",
     "invalidOtp": "Code must be 6 digits"
   },
+  "notRegistered": {
+    "title": "This number isn't registered yet",
+    "body": "The mobile number {phone} isn't associated with an active PowerLink account. To get connected, apply for a new connection and we'll be in touch within 24 hours.",
+    "applyCta": "Apply for a new connection",
+    "differentNumber": "Use a different number",
+    "alreadyApplied": "Already applied? Our team will contact you to complete registration."
+  },
   "dashboard": {
     "greeting": "Welcome back, {name}",
-    "greetingFallback": "Welcome back",
     "subtitle": "Here is your account summary.",
     "planSection": "Your plan",
-    "planName": "Plan",
     "speed": "Speed",
     "monthlyTotal": "Monthly total",
-    "validitySection": "Validity",
     "validityStart": "Started",
     "validityEnd": "Renews on",
     "daysRemaining": "{days} days remaining",
@@ -57,6 +61,9 @@
     "normal": "Normal",
     "throttle_l1": "Reduced (Level 1)",
     "throttle_l2": "Reduced (Level 2)"
+  },
+  "plans": {
+    "basePrice": "Base"
   },
   "common": {
     "loading": "Loading…",

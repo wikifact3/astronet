@@ -1,9 +1,5 @@
 /**
  * API client for the customer portal.
- *
- * URL resolution:
- *  - Server (SSR/RSC): API_INTERNAL_URL (absolute).
- *  - Browser: NEXT_PUBLIC_API_URL (defaults to /api, proxied via next.config).
  */
 
 let accessToken: string | null = null;
@@ -111,6 +107,20 @@ export interface VerifyOtpResponse {
   isNewUser: boolean;
 }
 
+export interface OtpSentResponse {
+  status: 'sent';
+  expiresIn: number;
+}
+
+export interface OtpNotRegisteredResponse {
+  status: 'not_registered';
+  message: string;
+  applyUrl: string;
+  phone: string;
+}
+
+export type OtpRequestResponse = OtpSentResponse | OtpNotRegisteredResponse;
+
 export interface MeResponse {
   id: string;
   phone: string;
@@ -159,7 +169,7 @@ export interface CurrentSubscription {
 export const api = {
   auth: {
     requestOtp: (phone: string) =>
-      request<{ expiresIn: number }>('/auth/otp/request', {
+      request<OtpRequestResponse>('/auth/otp/request', {
         method: 'POST',
         body: JSON.stringify({ phone }),
         skipAuth: true,

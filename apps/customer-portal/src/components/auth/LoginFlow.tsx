@@ -14,25 +14,28 @@ interface Props {
   dict: Dict;
 }
 
+type Step =
+  | { name: 'phone' }
+  | { name: 'otp' }
+  | { name: 'not_registered'; applyUrl: string; phone: string };
+
 export function LoginFlow({ locale, dict }: Props) {
   const router = useRouter();
   const { user, ready, login } = useAuth();
 
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [step, setStep] = useState<Step>({ name: 'phone' });
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
 
-  // If already authenticated, skip login
   useEffect(() => {
     if (ready && user) {
       router.replace(`/${locale}/dashboard`);
     }
   }, [ready, user, locale, router]);
 
-  // Resend countdown
   useEffect(() => {
     if (resendIn <= 0) return;
     const id = setInterval(() => setResendIn((s) => Math.max(0, s - 1)), 1000);
@@ -45,8 +48,19 @@ export function LoginFlow({ locale, dict }: Props) {
     setBusy(true);
     setError(null);
     try {
-      await api.auth.requestOtp(phone);
-      setStep('otp');
+      const res = await api.auth.requestOtp(phone);
+
+      if (res.status === 'not_registered') {
+        setStep({
+          name: 'not_registered',
+          applyUrl: res.applyUrl,
+          phone: res.phone,
+        });
+        return;
+      }
+
+      // status === 'sent'
+      setStep({ name: 'otp' });
       setResendIn(RESEND_SECONDS);
       setOtp('');
     } catch (err) {
@@ -82,7 +96,48 @@ export function LoginFlow({ locale, dict }: Props) {
     );
   }
 
-  if (step === 'phone') {
+  // ---------- Not-registered screen ----------
+  if (step.name === 'not_registered') {
+    return (
+      <div className="card p-6 sm:p-8">
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-amber-100 text-2xl">
+          ⚠️
+        </div>
+        <h1 className="mt-4 text-center text-xl font-bold text-gray-900">
+          {t(dict, 'notRegistered.title')}
+        </h1>
+        <p className="mt-3 text-center text-sm text-gray-600">
+          {t(dict, 'notRegistered.body', { phone: step.phone })}
+        </p>
+
+        <a
+          href={step.applyUrl}
+          className="btn btn-primary mt-6 w-full"
+          rel="noopener"
+        >
+          {t(dict, 'notRegistered.applyCta')} →
+        </a>
+
+        <p className="mt-3 text-center text-xs text-gray-500">
+          {t(dict, 'notRegistered.alreadyApplied')}
+        </p>
+
+        <button
+          type="button"
+          onClick={() => {
+            setStep({ name: 'phone' });
+            setError(null);
+          }}
+          className="mt-6 block w-full text-center text-xs text-gray-500 hover:text-gray-700"
+        >
+          {t(dict, 'notRegistered.differentNumber')}
+        </button>
+      </div>
+    );
+  }
+
+  // ---------- Phone step ----------
+  if (step.name === 'phone') {
     return (
       <form onSubmit={sendCode} className="card p-6 sm:p-8">
         <h1 className="text-2xl font-bold text-gray-900">{t(dict, 'login.title')}</h1>
@@ -124,6 +179,7 @@ export function LoginFlow({ locale, dict }: Props) {
     );
   }
 
+  // ---------- OTP step ----------
   return (
     <form onSubmit={verifyCode} className="card p-6 sm:p-8">
       <h1 className="text-2xl font-bold text-gray-900">{t(dict, 'login.otpTitle')}</h1>
@@ -134,7 +190,7 @@ export function LoginFlow({ locale, dict }: Props) {
       <label className="mt-6 block">
         <span className="label">{t(dict, 'login.otpLabel')}</span>
         <input
-          className="input mt-1 tracking-[0.5em] text-center text-lg"
+          className="input mt-1 text-center text-lg tracking-[0.5em]"
           inputMode="numeric"
           autoComplete="one-time-code"
           placeholder={t(dict, 'login.otpPlaceholder')}
@@ -168,7 +224,7 @@ export function LoginFlow({ locale, dict }: Props) {
           type="button"
           className="text-gray-500 hover:text-gray-700"
           onClick={() => {
-            setStep('phone');
+            setStep({ name: 'phone' });
             setOtp('');
             setError(null);
           }}
@@ -183,7 +239,15 @@ export function LoginFlow({ locale, dict }: Props) {
           onClick={async () => {
             setError(null);
             try {
-              await api.auth.requestOtp(phone);
+              const res = await api.auth.requestOtp(phone);
+              if (res.status === 'not_registered') {
+                setStep({
+                  name: 'not_registered',
+                  applyUrl: res.applyUrl,
+                  phone: res.phone,
+                });
+                return;
+              }
               setResendIn(RESEND_SECONDS);
             } catch (err) {
               const msg = err instanceof ApiError ? err.message : t(dict, 'common.error');
