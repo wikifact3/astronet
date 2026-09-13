@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
@@ -7,9 +8,15 @@ import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
+
+  // Trust proxy must be set BEFORE any middleware that reads req.ip.
+  // Without this, X-Forwarded-For can be spoofed by the client.
+  const trustProxy = configService.get('app.trustProxy');
+  app.set('trust proxy', trustProxy);
+  logger.log(`trust proxy = ${JSON.stringify(trustProxy)}`);
 
   app.use(helmet());
   app.use(compression());

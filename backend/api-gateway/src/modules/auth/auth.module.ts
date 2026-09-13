@@ -5,14 +5,16 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { OtpRateLimitService } from './otp-rate-limit.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { OtpCode } from '../../database/entities/otp-code.entity';
 import { Customer } from '../../database/entities/customer.entity';
+import { RefreshToken } from '../../database/entities/refresh-token.entity';
 import { SmsModule } from '../sms/sms.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([OtpCode, Customer]),
+    TypeOrmModule.forFeature([OtpCode, Customer, RefreshToken,]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -29,7 +31,7 @@ import { SmsModule } from '../sms/sms.module';
     SmsModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService,  OtpRateLimitService, JwtStrategy],
   exports: [AuthService, JwtStrategy],
 })
 export class AuthModule {}

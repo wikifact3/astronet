@@ -1,5 +1,5 @@
 export interface JwtPayload {
-  sub: string;      // customer id
+  sub: string;
   phone: string;
   typ: 'access';
 }
@@ -7,6 +7,8 @@ export interface JwtPayload {
 export interface RefreshPayload {
   sub: string;
   typ: 'refresh';
+  jti: string;
+  familyId: string;
 }
 
 export interface AuthenticatedUser {

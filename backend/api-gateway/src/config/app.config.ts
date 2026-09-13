@@ -1,9 +1,21 @@
 import { registerAs } from '@nestjs/config';
 
+function parseTrustProxy(raw: string | undefined): boolean | number | string {
+  if (!raw) return false;
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  const n = Number(raw);
+  if (!Number.isNaN(n) && Number.isInteger(n) && n >= 0) return n;
+  return raw; // e.g. 'loopback', 'linklocal', or a CIDR string
+}
+
 export default registerAs('app', () => ({
   name: process.env.APP_NAME || 'PowerLink API',
   environment: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '8080', 10),
+
+  trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
+
   corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:3000,http://localhost:3001')
     .split(',')
     .map((s) => s.trim()),
@@ -21,7 +33,12 @@ export default registerAs('app', () => ({
   otp: {
     length: 6,
     expiresInSeconds: parseInt(process.env.OTP_EXPIRES_IN || '300', 10),
-    maxRequestsPerHour: parseInt(process.env.OTP_RATE_LIMIT || '5', 10),
     devMode: (process.env.NODE_ENV || 'development') !== 'production',
+    maxAttempts: 5,
+    rateLimits: {
+      perPhonePerHour: parseInt(process.env.OTP_PHONE_LIMIT || '5', 10),
+      perIpPerHour: parseInt(process.env.OTP_IP_LIMIT || '20', 10),
+      globalPerHour: parseInt(process.env.OTP_GLOBAL_LIMIT || '500', 10),
+    },
   },
 }));
