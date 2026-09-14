@@ -48,7 +48,26 @@
     "graceExplanation": "Use Promise to Pay to extend your service by 2 days when you're short on payment. Limit resets yearly.",
     "accountSection": "Account",
     "accountStatus": "Status",
-    "customerSince": "Customer since"
+    "customerSince": "Customer since",
+    "renewCta": "Renew now",
+    "renewCtaExpiring": "Renew — {days} days left",
+    "renewCtaExpired": "Renew to reactivate",
+    "renewSubtitle": "Pay your next bill to keep your connection active.",
+    "autoRenewOn": "Auto-renew is on",
+    "autoRenewOff": "Auto-renew is off"
+  },
+  "renew": {
+    "title": "Renew your plan",
+    "subtitle": "Pay your next billing cycle to keep your PowerLink connection active.",
+    "planLabel": "Plan",
+    "amountLabel": "Amount due",
+    "periodLabel": "Billing period",
+    "payButton": "Pay now",
+    "payingButton": "Opening payment…",
+    "backButton": "Back to dashboard",
+    "comingSoon": "Payment integration is coming soon. You'll be able to pay with eSewa or Khalti here.",
+    "invoiceNote": "Your invoice will be issued after payment is confirmed.",
+    "daysRemainingNote": "{days} days remaining on your current cycle"
   },
   "status": {
     "active": "Active",
@@ -63,7 +82,8 @@
     "throttle_l2": "Reduced (Level 2)"
   },
   "plans": {
-    "basePrice": "Base"
+    "basePrice": "Base",
+    "perMonth": "/month"
   },
   "common": {
     "loading": "Loading…",

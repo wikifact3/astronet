@@ -99,7 +99,7 @@ export function DashboardView({ locale, dict }: Props) {
       {sub && (
         <div className="mt-8 grid gap-6 md:grid-cols-3">
           <div className="md:col-span-2">
-            <SubscriptionCard dict={dict} sub={sub} />
+            <SubscriptionCard dict={dict} locale={locale} sub={sub} />
           </div>
           <div className="space-y-6">
             <PlanSummary dict={dict} sub={sub} />
