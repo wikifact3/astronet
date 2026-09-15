@@ -25,7 +25,7 @@ export class Payment extends BaseEntity {
   @JoinColumn({ name: 'invoice_id' })
   invoice: Invoice;
 
-  @Column({ name: 'invoice_id' })
+  @Column({ name: 'invoice_id', type: 'uuid' })
   invoiceId: string;
 
   @Column({
@@ -72,4 +72,13 @@ export class Payment extends BaseEntity {
 
   @Column({ type: 'jsonb', nullable: true })
   metadata: object | null;
+
+  @Column({ name: 'redirect_url', type: 'text', nullable: true })
+  redirectUrl: string | null;
+
+  @Column({ name: 'initiated_by', type: 'uuid', nullable: true })
+  initiatedBy: string | null;
+
+  @Column({ name: 'expires_at', type: 'timestamptz', nullable: true })
+  expiresAt: Date | null;
 }

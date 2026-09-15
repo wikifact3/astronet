@@ -18,6 +18,7 @@ import { Lead } from './entities/lead.entity';
 import { OtpCode } from './entities/otp-code.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { OtpRequestLog } from './entities/otp-request-log.entity';
+import { IdempotencyKey } from '../common/idempotency/idempotency.entity';
 import { InitialSchema1740000000000 } from './migrations/1740000000000-InitialSchema';
 import { AddUniqueConstraints1740000000001 } from './migrations/1740000000001-AddUniqueConstraints';
 import { CreateLeads1740000000002 } from './migrations/1740000000002-CreateLeads';
@@ -25,6 +26,7 @@ import { CreateOtpCodes1740000000003 } from './migrations/1740000000003-CreateOt
 import { CreateRefreshTokens1740000000004 } from './migrations/1740000000004-CreateRefreshTokens';
 import { AddOtpIpIndex1740000000005 } from './migrations/1740000000005-AddOtpIpIndex';
 import { CreateOtpRequestLog1740000000006 } from './migrations/1740000000006-CreateOtpRequestLog';
+import { PaymentFlowFields1740000000007 } from './migrations/1740000000007-PaymentFlowFields';
 
 config();
 
@@ -38,7 +40,7 @@ const AppDataSource = new DataSource({
   entities: [
     Customer, Account, Plan, Subscription, Invoice, Payment,
     Ticket, StaffUser, Role, Permission, Device, AuditLog,  
-    CoverageGeoData, Notification, Lead, OtpCode, RefreshToken, OtpRequestLog,
+    CoverageGeoData, Notification, Lead, OtpCode, RefreshToken, OtpRequestLog, IdempotencyKey,
   ],
   migrations: [
     InitialSchema1740000000000,
@@ -48,6 +50,7 @@ const AppDataSource = new DataSource({
     CreateRefreshTokens1740000000004,
     AddOtpIpIndex1740000000005,
     CreateOtpRequestLog1740000000006,
+    PaymentFlowFields1740000000007,
   ],
   synchronize: false,
   logging: process.env.NODE_ENV === 'development',

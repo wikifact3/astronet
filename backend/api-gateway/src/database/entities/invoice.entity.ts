@@ -25,17 +25,17 @@ export class Invoice extends BaseEntity {
   @JoinColumn({ name: 'account_id' })
   account: Account;
 
-  @Column({ name: 'account_id' })
+  @Column({ name: 'account_id', type: 'uuid' })
   accountId: string;
 
   @ManyToOne(() => Subscription)
   @JoinColumn({ name: 'subscription_id' })
   subscription: Subscription;
 
-  @Column({ name: 'subscription_id' })
+  @Column({ name: 'subscription_id', type: 'uuid' })
   subscriptionId: string;
 
-  @Column({ name: 'invoice_number', unique: true, length: 50 })
+  @Column({ name: 'invoice_number', type: 'varchar', length: 50, unique: true })
   invoiceNumber: string;
 
   @Column({ type: 'decimal', precision: 12, scale: 2 })
@@ -87,6 +87,12 @@ export class Invoice extends BaseEntity {
 
   @Column({ type: 'text', nullable: true })
   notes: string | null;
+
+  @Column({ name: 'period_start', type: 'date', nullable: true })
+  periodStart: Date | null;
+
+  @Column({ name: 'period_end', type: 'date', nullable: true })
+  periodEnd: Date | null;
 
   @ManyToOne(() => Invoice, { nullable: true })
   @JoinColumn({ name: 'original_invoice_id' })

@@ -7,21 +7,23 @@ import { HealthModule } from './modules/health/health.module';
 import { CoverageModule } from './modules/coverage/coverage.module';
 import { PlansModule } from './modules/plans/plans.module';
 import { LeadsModule } from './modules/leads/leads.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { SmsModule } from './modules/sms/sms.module';
-import { AuthModule } from './modules/auth/auth.module';
-//import { PaymentsModule } from './modules/payments/payments.module'; //add AuthModule, PaymentsModule, TicketsModule one at a time as we build them
-//import { TicketsModule } from './modules/tickets/tickets.module';
+import { InvoicesModule } from './modules/invoices/invoices.module';
+import { PaymentsModule } from './modules/payments/payments.module'; 
+//import { TicketsModule } from './modules/tickets/tickets.module';//add AuthModule, TicketsModule one at a time as we build them
 import appConfig from './config/app.config';
 import dbConfig from './config/db.config';
 import redisConfig from './config/redis.config';
+import paymentConfig from './config/payment.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, dbConfig, redisConfig],
+      load: [appConfig, dbConfig, redisConfig, paymentConfig],
       envFilePath: ['.env', '../../.env'],
     }),
 
@@ -64,12 +66,13 @@ import redisConfig from './config/redis.config';
     CoverageModule,
     PlansModule,
     LeadsModule,
+    AuthModule,
     CustomersModule,
     SubscriptionsModule,
     SmsModule,
-    AuthModule,
-    //PaymentsModule,//add AuthModule, PaymentsModule, TicketsModule one at a time as we build them
-    //TicketsModule, //add AuthModule, PaymentsModule, TicketsModule one at a time as we build them
+    InvoicesModule,
+    PaymentsModule,
+    //TicketsModule, //add AuthModule, TicketsModule one at a time as we build them
   ],
 })
 export class AppModule {}

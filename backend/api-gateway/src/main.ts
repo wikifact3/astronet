@@ -8,7 +8,9 @@ import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    rawBody: true,
+  });
   const configService = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
 
@@ -26,6 +28,7 @@ async function bootstrap() {
     ...configService.get<string>('CORS_ORIGINS', '').split(',').filter(Boolean),
     'http://localhost:3000',
     'http://localhost:3001',
+    'http://localhost:8080',
     process.env.CODESPACE_NAME &&
       `https://${process.env.CODESPACE_NAME}-3000.app.github.dev`,
     process.env.CODESPACE_NAME &&
@@ -56,6 +59,11 @@ async function bootstrap() {
 
   logger.log(`🚀 PowerLink API running on http://localhost:${port}/v1`);
   logger.log(`   CORS allowed: ${allowed.join(', ')}`);
+  logger.log(`   API_PUBLIC_BASE_URL:    ${configService.get('payment.apiPublicBaseUrl')}`);
+  logger.log(`   PORTAL_PUBLIC_BASE_URL: ${configService.get('payment.portalPublicBaseUrl')}`);
+  logger.log(`   PORTAL_PUBLIC_BASE_URL env: ${process.env.PORTAL_PUBLIC_BASE_URL ?? '(unset)'}`);
+  logger.log(`   PORTAL_PUBLIC_BASE_URL cfg: ${configService.get('payment.portalPublicBaseUrl')}`);
+  logger.log(`   STUB_CHECKOUT_BASE_URL:    ${configService.get('payment.stub.checkoutBaseUrl')}`);
 }
 
 bootstrap();
