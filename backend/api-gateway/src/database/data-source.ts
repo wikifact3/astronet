@@ -16,6 +16,7 @@ import { AuditLog } from './entities/audit-log.entity';
 import { CoverageGeoData } from './entities/coverage-geo-data.entity';
 import { Notification } from './entities/notification.entity';
 import { Lead } from './entities/lead.entity';
+import { KycDocument } from './entities/kyc-document.entity';
 import { OtpCode } from './entities/otp-code.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { OtpRequestLog } from './entities/otp-request-log.entity';
@@ -29,6 +30,9 @@ import { AddOtpIpIndex1740000000005 } from './migrations/1740000000005-AddOtpIpI
 import { CreateOtpRequestLog1740000000006 } from './migrations/1740000000006-CreateOtpRequestLog';
 import { PaymentFlowFields1740000000007 } from './migrations/1740000000007-PaymentFlowFields';
 import { OneIssuedInvoicePerSubscription1740000000008 } from './migrations/1740000000008-OneIssuedInvoicePerSubscription';
+import { StaffAuth1740000000009 } from './migrations/1740000000009-StaffAuth';
+import { RefreshTokensSubjectType1740000000010 } from './migrations/1740000000010-RefreshTokensSubjectType';
+import { DropRefreshTokensCustomerFk1740000000011 } from './migrations/1740000000011-DropRefreshTokensCustomerFk';
 
 config();
 
@@ -42,7 +46,7 @@ const AppDataSource = new DataSource({
   entities: [
     Customer, Account, Plan, Subscription, Invoice, Payment,
     Ticket, TicketMessage, StaffUser, Role, Permission, Device, AuditLog,  
-    CoverageGeoData, Notification, Lead, OtpCode, RefreshToken, OtpRequestLog, IdempotencyKey, 
+    CoverageGeoData, Notification, Lead, KycDocument, OtpCode, RefreshToken, OtpRequestLog, IdempotencyKey, 
   ],
   migrations: [
     InitialSchema1740000000000,
@@ -54,6 +58,9 @@ const AppDataSource = new DataSource({
     CreateOtpRequestLog1740000000006,
     PaymentFlowFields1740000000007,
     OneIssuedInvoicePerSubscription1740000000008,
+    StaffAuth1740000000009,
+    RefreshTokensSubjectType1740000000010,
+    DropRefreshTokensCustomerFk1740000000011,
   ],
   synchronize: false,
   logging: process.env.NODE_ENV === 'development',

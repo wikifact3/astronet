@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
-
 import { HealthModule } from './modules/health/health.module';
 import { CoverageModule } from './modules/coverage/coverage.module';
 import { PlansModule } from './modules/plans/plans.module';
@@ -14,6 +13,8 @@ import { SmsModule } from './modules/sms/sms.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
 import { PaymentsModule } from './modules/payments/payments.module'; 
 import { TicketsModule } from './modules/tickets/tickets.module';
+import { AdminAuthModule } from './modules/admin-auth/admin-auth.module';
+import { AdminKycModule } from './modules/admin-kyc/admin-kyc.module';
 import appConfig from './config/app.config';
 import dbConfig from './config/db.config';
 import redisConfig from './config/redis.config';
@@ -73,6 +74,8 @@ import paymentConfig from './config/payment.config';
     InvoicesModule,
     PaymentsModule,
     TicketsModule, 
+     AdminAuthModule,
+    AdminKycModule,
   ],
 })
 export class AppModule {}

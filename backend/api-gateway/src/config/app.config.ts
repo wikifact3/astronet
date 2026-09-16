@@ -32,6 +32,13 @@ export default registerAs('app', () => ({
     refreshExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '7d',
     issuer: 'powerlink.com.np',
     audience: 'powerlink-clients',
+    adminAudience: 'powerlink-admin',
+  },
+
+  adminAuth: {
+    maxFailedAttempts: parseInt(process.env.ADMIN_MAX_FAILED_ATTEMPTS || '5', 10),
+    lockoutMinutes: parseInt(process.env.ADMIN_LOCKOUT_MINUTES || '15', 10),
+    bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS || '10', 10),
   },
 
   otp: {

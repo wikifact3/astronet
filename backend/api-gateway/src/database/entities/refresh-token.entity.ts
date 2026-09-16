@@ -14,8 +14,13 @@ export class RefreshToken {
   @Column({ name: 'family_id', type: 'uuid' })
   familyId: string;
 
+  // customer_id holds either a customer UUID or a staff UUID depending
+  // on subject_type. This keeps one table for all refresh sessions.
   @Column({ name: 'customer_id', type: 'uuid' })
   customerId: string;
+
+  @Column({ name: 'subject_type', type: 'varchar', length: 20, default: 'customer' })
+  subjectType: 'customer' | 'staff';
 
   @Column({ name: 'issued_at', type: 'timestamptz', default: () => 'NOW()' })
   issuedAt: Date;
