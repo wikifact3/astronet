@@ -54,7 +54,8 @@
     "renewCtaExpired": "Renew to reactivate",
     "renewSubtitle": "Pay your next bill to keep your connection active.",
     "autoRenewOn": "Auto-renew is on",
-    "autoRenewOff": "Auto-renew is off"
+    "autoRenewOff": "Auto-renew is off",
+    "invoicesLink": "View invoices"
   },
   "renew": {
     "title": "Renew your plan",
@@ -62,19 +63,51 @@
     "planLabel": "Plan",
     "amountLabel": "Amount due",
     "periodLabel": "Billing period",
+    "invoiceNumber": "Invoice",
     "payButton": "Pay now",
     "payingButton": "Opening payment…",
     "backButton": "Back to dashboard",
-    "comingSoon": "Payment integration is coming soon. You'll be able to pay with eSewa or Khalti here.",
-    "invoiceNote": "Your invoice will be issued after payment is confirmed.",
-    "daysRemainingNote": "{days} days remaining on your current cycle"
+    "chooseProvider": "Choose payment method",
+    "providerEsewa": "eSewa",
+    "providerKhalti": "Khalti",
+    "daysRemainingNote": "{days} days remaining on your current cycle",
+    "alreadyPaid": "This invoice is already paid.",
+    "processingTitle": "Verifying your payment…",
+    "processingBody": "Please wait while we confirm your payment with the provider.",
+    "successTitle": "Payment confirmed",
+    "successBody": "Your subscription has been renewed. Your new cycle runs through {end}.",
+    "failedTitle": "Payment could not be completed",
+    "failedBody": "Your payment was not successful. You can try again or choose a different method.",
+    "pendingTitle": "Payment is still processing",
+    "pendingBody": "We haven't received confirmation yet. If your account was debited, the payment will complete shortly. If not, you can try again.",
+    "tryAgain": "Try again",
+    "backToDashboard": "Back to dashboard",
+    "checkStatusAgain": "Check status again"
+  },
+  "invoices": {
+    "title": "Invoices",
+    "subtitle": "Download your billing history.",
+    "empty": "No invoices yet.",
+    "columnNumber": "Invoice",
+    "columnIssued": "Issued",
+    "columnDue": "Due",
+    "columnAmount": "Amount",
+    "columnStatus": "Status",
+    "downloadPdf": "Download PDF",
+    "back": "Back"
   },
   "status": {
     "active": "Active",
     "suspended": "Suspended",
     "churned": "Churned",
     "pending_activation": "Pending activation",
-    "lead": "Lead"
+    "lead": "Lead",
+    "draft": "Draft",
+    "issued": "Issued",
+    "paid": "Paid",
+    "overdue": "Overdue",
+    "cancelled": "Cancelled",
+    "credit_note": "Credit note"
   },
   "fupTier": {
     "normal": "Normal",

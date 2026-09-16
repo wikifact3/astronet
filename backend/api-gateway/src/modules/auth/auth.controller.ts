@@ -63,7 +63,12 @@ export class AuthController {
 
     const tokens = await this.authService.refresh(token, ctxOf(req));
 
-    res.cookie(REFRESH_COOKIE, tokens.refreshToken, cookieOptions());
+    // Empty refreshToken means "do not rotate — the browser already has
+    // the correct cookie". This happens within the grace window after a
+    // legitimate rotation.
+    if (tokens.refreshToken) {
+      res.cookie(REFRESH_COOKIE, tokens.refreshToken, cookieOptions());
+    }
 
     return { accessToken: tokens.accessToken };
   }

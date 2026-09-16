@@ -27,6 +27,7 @@ import { CreateRefreshTokens1740000000004 } from './migrations/1740000000004-Cre
 import { AddOtpIpIndex1740000000005 } from './migrations/1740000000005-AddOtpIpIndex';
 import { CreateOtpRequestLog1740000000006 } from './migrations/1740000000006-CreateOtpRequestLog';
 import { PaymentFlowFields1740000000007 } from './migrations/1740000000007-PaymentFlowFields';
+import { OneIssuedInvoicePerSubscription1740000000008 } from './migrations/1740000000008-OneIssuedInvoicePerSubscription';
 
 config();
 
@@ -40,7 +41,7 @@ const AppDataSource = new DataSource({
   entities: [
     Customer, Account, Plan, Subscription, Invoice, Payment,
     Ticket, StaffUser, Role, Permission, Device, AuditLog,  
-    CoverageGeoData, Notification, Lead, OtpCode, RefreshToken, OtpRequestLog, IdempotencyKey,
+    CoverageGeoData, Notification, Lead, OtpCode, RefreshToken, OtpRequestLog, IdempotencyKey, 
   ],
   migrations: [
     InitialSchema1740000000000,
@@ -51,6 +52,7 @@ const AppDataSource = new DataSource({
     AddOtpIpIndex1740000000005,
     CreateOtpRequestLog1740000000006,
     PaymentFlowFields1740000000007,
+    OneIssuedInvoicePerSubscription1740000000008,
   ],
   synchronize: false,
   logging: process.env.NODE_ENV === 'development',

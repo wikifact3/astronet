@@ -120,9 +120,23 @@ export class InvoicesService {
       periodEnd,
     });
 
-    const saved = await this.invoiceRepo.save(invoice);
-    this.logger.log(`Invoice generated: ${saved.invoiceNumber} for subscription ${subscription.id}`);
-    return this.toResponse(saved);
+    try {
+      const saved = await this.invoiceRepo.save(invoice);
+      this.logger.log(`Invoice generated: ${saved.invoiceNumber} for subscription ${subscription.id}`);
+      return this.toResponse(saved);
+    } catch (err) {
+      // Race: another request created the issued invoice first.
+      // Unique index uniq_issued_invoice_per_subscription caught it — re-fetch.
+      const code = (err as { code?: string }).code;
+      if (code === '23505') {
+        const concurrent = await this.invoiceRepo.findOne({
+          where: { subscriptionId: subscription.id, status: InvoiceStatus.ISSUED },
+          order: { issuedAt: 'DESC' },
+        });
+        if (concurrent) return this.toResponse(concurrent);
+      }
+      throw err;
+    }
   }
 
   async getRawForCustomer(customerId: string, invoiceId: string): Promise<Invoice> {

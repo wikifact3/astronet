@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api, ApiError, type CurrentSubscription, type MeResponse } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
@@ -77,13 +78,21 @@ export function DashboardView({ locale, dict }: Props) {
 
   return (
     <section className="container-page py-10">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          {t(dict, 'dashboard.greeting', { name: greetingName })}
-        </h1>
-        <p className="mt-1 text-sm text-gray-600">
-          {t(dict, 'dashboard.subtitle')}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {t(dict, 'dashboard.greeting', { name: greetingName })}
+          </h1>
+          <p className="mt-1 text-sm text-gray-600">
+            {t(dict, 'dashboard.subtitle')}
+          </p>
+        </div>
+        <Link
+          href={`/${locale}/invoices`}
+          className="btn btn-outline text-xs whitespace-nowrap"
+        >
+          {t(dict, 'dashboard.invoicesLink')}
+        </Link>
       </div>
 
       {loading && (

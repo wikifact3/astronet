@@ -20,7 +20,17 @@ async function bootstrap() {
   app.set('trust proxy', trustProxy);
   logger.log(`trust proxy = ${JSON.stringify(trustProxy)}`);
 
-  app.use(helmet());
+     // CSP is disabled: the API serves JSON plus one HTML page (stub checkout)
+  // that posts cross-path forms. Helmet's default form-action 'self' would
+  // break that. We will not need a general CSP until the admin portal ships
+  // real HTML from this origin. The customer-facing pages are served by
+  // Next.js, which handles its own headers.
+  app.use(helmet({
+    contentSecurityPolicy: false,
+      crossOriginResourcePolicy: false,
+      crossOriginEmbedderPolicy: false,
+      crossOriginOpenerPolicy: false
+}));
   app.use(compression());
   app.use(cookieParser());
 

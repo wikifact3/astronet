@@ -5,6 +5,14 @@
 let accessToken: string | null = null;
 let onUnauthorized: (() => void) | null = null;
 
+/**
+ * Single-flight refresh: if multiple callers hit refresh() concurrently,
+ * they all await the same in-flight request. Without this, React strict-mode
+ * double-mounts and navigation-induced remounts trip the backend's reuse
+ * detector.
+ */
+let refreshPromise: Promise<{ accessToken: string }> | null = null;
+
 export function setAccessToken(token: string | null): void {
   accessToken = token;
 }
@@ -21,9 +29,7 @@ function getBaseUrl(): string {
   const isServer = typeof window === 'undefined';
   if (isServer) {
     const internal = process.env.API_INTERNAL_URL;
-    if (!internal) {
-      throw new Error('API_INTERNAL_URL is not set for server-side fetches.');
-    }
+    if (!internal) throw new Error('API_INTERNAL_URL is not set for server-side fetches.');
     return internal.endsWith('/v1') ? internal : `${internal.replace(/\/$/, '')}/v1`;
   }
   return process.env.NEXT_PUBLIC_API_URL || '/api';
@@ -90,6 +96,21 @@ async function request<T>(path: string, init?: RequestInitWithRevalidate): Promi
   }
 
   return (await res.json()) as T;
+}
+
+/**
+ * Single-flight wrapper around POST /auth/refresh.
+ * Concurrent callers share the same in-flight promise.
+ */
+async function refreshAccessToken(): Promise<{ accessToken: string }> {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = request<{ accessToken: string }>('/auth/refresh', {
+    method: 'POST',
+    skipAuth: true,
+  }).finally(() => {
+    refreshPromise = null;
+  });
+  return refreshPromise;
 }
 
 // ---------- Types ----------
@@ -164,6 +185,44 @@ export interface CurrentSubscription {
   };
 }
 
+export interface InvoiceResponse {
+  id: string;
+  invoiceNumber: string;
+  amount: number;
+  vatAmount: number;
+  tscAmount: number;
+  totalAmount: number;
+  status: 'draft' | 'issued' | 'paid' | 'overdue' | 'cancelled' | 'credit_note';
+  issuedAt: string;
+  dueDate: string;
+  paidAt: string | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  planName: string;
+}
+
+export interface InitiatePaymentResponse {
+  paymentId: string;
+  redirectUrl: string;
+  expiresAt: string;
+}
+
+export interface PaymentStatusResponse {
+  paymentId: string;
+  status:
+    | 'initiated'
+    | 'pending_confirmation'
+    | 'confirmed'
+    | 'declined'
+    | 'timeout'
+    | 'refunded'
+    | 'failed';
+  providerTxnId: string | null;
+  confirmedAt: string | null;
+  invoiceStatus: InvoiceResponse['status'];
+  bandwidthStatus: 'pending' | 'active' | 'failed';
+}
+
 // ---------- Endpoints ----------
 
 export const api = {
@@ -180,11 +239,7 @@ export const api = {
         body: JSON.stringify({ phone, otp }),
         skipAuth: true,
       }),
-    refresh: () =>
-      request<{ accessToken: string }>('/auth/refresh', {
-        method: 'POST',
-        skipAuth: true,
-      }),
+    refresh: refreshAccessToken,
     logout: () =>
       request<{ ok: boolean }>('/auth/logout', {
         method: 'POST',
@@ -196,6 +251,28 @@ export const api = {
   },
   subscriptions: {
     current: () => request<CurrentSubscription>('/subscriptions/current'),
+  },
+  invoices: {
+    list: () => request<{ invoices: InvoiceResponse[] }>('/invoices'),
+    get: (id: string) => request<InvoiceResponse>(`/invoices/${id}`),
+    generateCurrent: () =>
+      request<InvoiceResponse>('/invoices/generate-current', {
+        method: 'POST',
+      }),
+    pdfUrl: (id: string) => `${getBaseUrl()}/invoices/${id}/pdf`,
+  },
+  payments: {
+    initiate: (provider: 'esewa' | 'khalti', invoiceId: string) => {
+      const bucket = Math.floor(Date.now() / (5 * 60 * 1000));
+      const idem = `initiate-${invoiceId}-${provider}-${bucket}`;
+      return request<InitiatePaymentResponse>(`/payments/${provider}/initiate`, {
+        method: 'POST',
+        body: JSON.stringify({ invoiceId }),
+        headers: { 'Idempotency-Key': idem },
+      });
+    },
+    status: (paymentId: string) =>
+      request<PaymentStatusResponse>(`/payments/${paymentId}/status`),
   },
 };
 

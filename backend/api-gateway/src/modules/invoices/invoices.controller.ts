@@ -62,7 +62,7 @@ export class InvoicesController {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `inline; filename="${invoice.invoiceNumber}.pdf"`,
+      `attachment; filename="${invoice.invoiceNumber}.pdf"`,
     );
     res.send(buffer);
   }
