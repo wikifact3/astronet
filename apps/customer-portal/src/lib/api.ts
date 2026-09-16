@@ -225,6 +225,47 @@ export interface PaymentStatusResponse {
 
 // ---------- Endpoints ----------
 
+export type TicketCategory =
+  | 'connectivity'
+  | 'billing'
+  | 'hardware'
+  | 'installation'
+  | 'general';
+
+export type TicketStatus =
+  | 'open'
+  | 'assigned'
+  | 'field_tech_dispatched'
+  | 'pending_customer'
+  | 'resolved'
+  | 'reopened'
+  | 'closed';
+
+export interface TicketSummary {
+  id: string;
+  ticketNumber: string;
+  category: TicketCategory;
+  status: TicketStatus;
+  priority: string;
+  subject: string;
+  createdAt: string;
+  resolvedAt: string | null;
+  reopenDeadline: string | null;
+  reopenedCount: number;
+  messageCount: number;
+}
+
+export interface TicketDetail extends TicketSummary {
+  description: string;
+  messages: Array<{
+    id: string;
+    authorType: 'customer' | 'staff' | 'system';
+    authorName: string;
+    message: string;
+    createdAt: string;
+  }>;
+}
+
 export const api = {
   auth: {
     requestOtp: (phone: string) =>
@@ -274,7 +315,32 @@ export const api = {
     status: (paymentId: string) =>
       request<PaymentStatusResponse>(`/payments/${paymentId}/status`),
   },
+  tickets: {
+    list: (params?: { status?: TicketStatus; category?: TicketCategory; limit?: number; page?: number }) => {
+      const qs = new URLSearchParams();
+      if (params?.status) qs.set('status', params.status);
+      if (params?.category) qs.set('category', params.category);
+      if (params?.limit) qs.set('limit', String(params.limit));
+      if (params?.page) qs.set('page', String(params.page));
+      const suffix = qs.toString() ? `?${qs}` : '';
+      return request<{ tickets: TicketSummary[]; total: number }>(`/tickets${suffix}`);
+    },
+    create: (body: { category: TicketCategory; subject: string; description: string }) =>
+      request<TicketDetail>('/tickets', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    get: (id: string) => request<TicketDetail>(`/tickets/${id}`),
+    addMessage: (id: string, message: string) =>
+      request<TicketDetail>(`/tickets/${id}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({ message }),
+      }),
+    reopen: (id: string) =>
+      request<TicketDetail>(`/tickets/${id}/reopen`, { method: 'POST' }),
+  },
 };
+
 
 export function formatNPR(amount: number): string {
   return `Rs. ${amount.toLocaleString('en-NP', {

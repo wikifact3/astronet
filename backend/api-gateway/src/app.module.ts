@@ -13,7 +13,7 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
 import { SmsModule } from './modules/sms/sms.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
 import { PaymentsModule } from './modules/payments/payments.module'; 
-//import { TicketsModule } from './modules/tickets/tickets.module';//add AuthModule, TicketsModule one at a time as we build them
+import { TicketsModule } from './modules/tickets/tickets.module';
 import appConfig from './config/app.config';
 import dbConfig from './config/db.config';
 import redisConfig from './config/redis.config';
@@ -72,7 +72,7 @@ import paymentConfig from './config/payment.config';
     SmsModule,
     InvoicesModule,
     PaymentsModule,
-    //TicketsModule, //add AuthModule, TicketsModule one at a time as we build them
+    TicketsModule, 
   ],
 })
 export class AppModule {}

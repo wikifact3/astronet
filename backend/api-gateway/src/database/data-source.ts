@@ -7,6 +7,7 @@ import { Subscription } from './entities/subscription.entity';
 import { Invoice } from './entities/invoice.entity';
 import { Payment } from './entities/payment.entity';
 import { Ticket } from './entities/ticket.entity';
+import { TicketMessage } from './entities/ticket-message.entity';
 import { StaffUser } from './entities/staff-user.entity';
 import { Role } from './entities/role.entity';
 import { Permission } from './entities/permission.entity';
@@ -40,7 +41,7 @@ const AppDataSource = new DataSource({
   database: process.env.DB_NAME || 'powerlink_core',
   entities: [
     Customer, Account, Plan, Subscription, Invoice, Payment,
-    Ticket, StaffUser, Role, Permission, Device, AuditLog,  
+    Ticket, TicketMessage, StaffUser, Role, Permission, Device, AuditLog,  
     CoverageGeoData, Notification, Lead, OtpCode, RefreshToken, OtpRequestLog, IdempotencyKey, 
   ],
   migrations: [

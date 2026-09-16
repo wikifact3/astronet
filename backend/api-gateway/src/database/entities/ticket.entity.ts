@@ -1,7 +1,6 @@
-import { Entity, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from './base.entity';
 import { Account } from './account.entity';
-import { StaffUser } from './staff-user.entity';
 
 export enum TicketCategory {
   CONNECTIVITY = 'connectivity',
@@ -27,53 +26,56 @@ export class Ticket extends BaseEntity {
   @JoinColumn({ name: 'account_id' })
   account: Account;
 
-  @Column({ name: 'account_id' })
+  @Column({ name: 'account_id', type: 'uuid' })
   accountId: string;
 
-  @Column({ 
+  @Column({
     type: 'enum',
-    enum: TicketCategory 
+    enum: TicketCategory,
+    enumName: 'ticket_category',
   })
   category: TicketCategory;
 
-  @Column({ 
+  @Column({
     type: 'enum',
     enum: TicketStatus,
-    default: TicketStatus.OPEN 
+    enumName: 'ticket_status',
+    default: TicketStatus.OPEN,
   })
   status: TicketStatus;
 
-  @Column({ default: 'medium', length: 20 })
+  @Column({ type: 'varchar', length: 20, default: 'medium' })
   priority: string;
 
-  @Column({ length: 200 })
+  @Column({ type: 'varchar', length: 200 })
   subject: string;
 
   @Column({ type: 'text' })
   description: string;
 
-  @ManyToOne(() => StaffUser, { nullable: true })
-  @JoinColumn({ name: 'assigned_to' })
-  assignedTo: StaffUser;
+  // assigned_to is stored as a scalar UUID. We deliberately do NOT declare
+  // a @ManyToOne(() => StaffUser) here — that would force every module
+  // registering Ticket to also register StaffUser, which drags unrelated
+  // entities into the customer module. The admin portal, when it needs the
+  // assignee, loads StaffUser by ID in its own scope.
+  @Column({ name: 'assigned_to', type: 'uuid', nullable: true })
+  assignedToId: string | null;
 
-  @Column({ name: 'assigned_to', nullable: true })
-  assignedToId: string;
+  @Column({ name: 'assigned_at', type: 'timestamptz', nullable: true })
+  assignedAt: Date | null;
 
-  @Column({ name: 'assigned_at', nullable: true })
-  assignedAt: Date;
+  @Column({ name: 'resolved_at', type: 'timestamptz', nullable: true })
+  resolvedAt: Date | null;
 
-  @Column({ name: 'resolved_at', nullable: true })
-  resolvedAt: Date;
-
-  @Column({ name: 'reopened_count', default: 0 })
+  @Column({ name: 'reopened_count', type: 'int', default: 0 })
   reopenedCount: number;
 
-  @Column({ name: 'reopen_deadline', nullable: true })
-  reopenDeadline: Date;
+  @Column({ name: 'reopen_deadline', type: 'timestamptz', nullable: true })
+  reopenDeadline: Date | null;
 
-  @Column({ name: 'customer_satisfaction_rating', nullable: true })
-  customerSatisfactionRating: number;
+  @Column({ name: 'customer_satisfaction_rating', type: 'int', nullable: true })
+  customerSatisfactionRating: number | null;
 
-  @Column({ length: 20, nullable: true })
-  ward: string;
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  ward: string | null;
 }

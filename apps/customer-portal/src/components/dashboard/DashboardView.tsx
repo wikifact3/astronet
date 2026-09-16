@@ -87,12 +87,20 @@ export function DashboardView({ locale, dict }: Props) {
             {t(dict, 'dashboard.subtitle')}
           </p>
         </div>
-        <Link
-          href={`/${locale}/invoices`}
-          className="btn btn-outline text-xs whitespace-nowrap"
-        >
-          {t(dict, 'dashboard.invoicesLink')}
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/${locale}/invoices`}
+            className="btn btn-outline text-xs whitespace-nowrap"
+          >
+            {t(dict, 'dashboard.invoicesLink')}
+          </Link>
+          <Link
+            href={`/${locale}/tickets`}
+            className="btn btn-outline text-xs whitespace-nowrap"
+          >
+            {t(dict, 'dashboard.supportLink')}
+          </Link>
+        </div>
       </div>
 
       {loading && (

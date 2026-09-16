@@ -55,7 +55,8 @@
     "renewSubtitle": "Pay your next bill to keep your connection active.",
     "autoRenewOn": "Auto-renew is on",
     "autoRenewOff": "Auto-renew is off",
-    "invoicesLink": "View invoices"
+    "invoicesLink": "View invoices",
+    "supportLink": "Support"
   },
   "renew": {
     "title": "Renew your plan",
@@ -122,5 +123,59 @@
     "loading": "Loading…",
     "error": "Something went wrong.",
     "retry": "Retry"
+  },
+  "tickets": {
+    "title": "Support tickets",
+    "subtitle": "Raise a request and track its progress.",
+    "newTicket": "New ticket",
+    "empty": "No tickets yet. Raise one if you need help.",
+    "back": "Back",
+    "backToTickets": "Back to tickets",
+    "columnNumber": "Ticket",
+    "columnSubject": "Subject",
+    "columnCategory": "Category",
+    "columnStatus": "Status",
+    "columnCreated": "Created",
+    "view": "View",
+    "reopen": "Reopen",
+    "reopenWindow": "You can reopen until {date}",
+    "reopenExpired": "Reopen window has expired",
+    "reopenedCount": "Reopened {count} time(s)",
+    "you": "You",
+    "support": "PowerLink Support",
+    "replyLabel": "Add a reply",
+    "replyPlaceholder": "Type your message…",
+    "sending": "Sending…",
+    "send": "Send reply",
+    "closedNotice": "This ticket is closed. Raise a new one if you need further help.",
+    "newForm": {
+      "title": "Raise a support ticket",
+      "category": "Category",
+      "subject": "Subject",
+      "subjectPlaceholder": "Short summary",
+      "description": "Describe the issue",
+      "descriptionPlaceholder": "Tell us what happened, when it started, and what you have already tried.",
+      "submit": "Submit ticket",
+      "submitting": "Submitting…",
+      "required": "This field is required",
+      "subjectMin": "Subject must be at least 3 characters",
+      "descriptionMin": "Description must be at least 10 characters"
+    }
+  },
+  "ticketCategory": {
+    "connectivity": "Connectivity",
+    "billing": "Billing",
+    "hardware": "Hardware",
+    "installation": "Installation",
+    "general": "General"
+  },
+  "ticketStatus": {
+    "open": "Open",
+    "assigned": "Assigned",
+    "field_tech_dispatched": "Technician dispatched",
+    "pending_customer": "Waiting on you",
+    "resolved": "Resolved",
+    "reopened": "Reopened",
+    "closed": "Closed"
   }
 }
