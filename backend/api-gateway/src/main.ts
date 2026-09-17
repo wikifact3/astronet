@@ -38,11 +38,14 @@ async function bootstrap() {
     ...configService.get<string>('CORS_ORIGINS', '').split(',').filter(Boolean),
     'http://localhost:3000',
     'http://localhost:3001',
+    'http://localhost:3002',
     'http://localhost:8080',
     process.env.CODESPACE_NAME &&
       `https://${process.env.CODESPACE_NAME}-3000.app.github.dev`,
     process.env.CODESPACE_NAME &&
       `https://${process.env.CODESPACE_NAME}-3001.app.github.dev`,
+    process.env.CODESPACE_NAME &&
+      `https://${process.env.CODESPACE_NAME}-3002.app.github.dev`,
   ].filter(Boolean) as string[];
 
   app.enableCors({
