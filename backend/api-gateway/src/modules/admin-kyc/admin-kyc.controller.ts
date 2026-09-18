@@ -26,6 +26,11 @@ export class AdminKycController {
     return this.kycService.get(id);
   }
 
+  @Post(':id/signed-url')
+  async signedUrl(@Param('id') id: string) {
+    return this.kycService.signedUrl(id);
+  }
+
   @Post(':id/review')
   async review(
     @Param('id') id: string,

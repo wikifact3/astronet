@@ -15,16 +15,21 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { TicketsModule } from './modules/tickets/tickets.module';
 import { AdminAuthModule } from './modules/admin-auth/admin-auth.module';
 import { AdminKycModule } from './modules/admin-kyc/admin-kyc.module';
+import { StorageModule } from './modules/storage/storage.module';
+import { KycUploadModule } from './modules/kyc/kyc-upload/kyc-upload.module';
+import { KycScanProcessorModule } from './modules/kyc/kyc-scan/kyc-scan.module';
 import appConfig from './config/app.config';
 import dbConfig from './config/db.config';
 import redisConfig from './config/redis.config';
 import paymentConfig from './config/payment.config';
+import storageConfig from './config/storage.config';
+import kycConfig from './config/kyc.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, dbConfig, redisConfig, paymentConfig],
+      load: [appConfig, dbConfig, redisConfig, paymentConfig, storageConfig, kycConfig],
       envFilePath: ['.env', '../../.env'],
     }),
 
@@ -76,6 +81,9 @@ import paymentConfig from './config/payment.config';
     TicketsModule, 
      AdminAuthModule,
     AdminKycModule,
+    StorageModule,
+    KycUploadModule,
+    KycScanProcessorModule,
   ],
 })
 export class AppModule {}

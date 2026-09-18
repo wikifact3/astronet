@@ -17,6 +17,7 @@ import { CoverageGeoData } from './entities/coverage-geo-data.entity';
 import { Notification } from './entities/notification.entity';
 import { Lead } from './entities/lead.entity';
 import { KycDocument } from './entities/kyc-document.entity';
+import { KycUploadSession } from './entities/kyc-upload-session.entity';
 import { OtpCode } from './entities/otp-code.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { OtpRequestLog } from './entities/otp-request-log.entity';
@@ -33,6 +34,7 @@ import { OneIssuedInvoicePerSubscription1740000000008 } from './migrations/17400
 import { StaffAuth1740000000009 } from './migrations/1740000000009-StaffAuth';
 import { RefreshTokensSubjectType1740000000010 } from './migrations/1740000000010-RefreshTokensSubjectType';
 import { DropRefreshTokensCustomerFk1740000000011 } from './migrations/1740000000011-DropRefreshTokensCustomerFk';
+import { KycUploadPipeline1740000000012 } from './migrations/1740000000012-KycUploadPipeline';
 
 config();
 
@@ -46,7 +48,7 @@ const AppDataSource = new DataSource({
   entities: [
     Customer, Account, Plan, Subscription, Invoice, Payment,
     Ticket, TicketMessage, StaffUser, Role, Permission, Device, AuditLog,  
-    CoverageGeoData, Notification, Lead, KycDocument, OtpCode, RefreshToken, OtpRequestLog, IdempotencyKey, 
+    CoverageGeoData, Notification, Lead, KycDocument, KycUploadSession, OtpCode, RefreshToken, OtpRequestLog, IdempotencyKey, 
   ],
   migrations: [
     InitialSchema1740000000000,
@@ -61,6 +63,7 @@ const AppDataSource = new DataSource({
     StaffAuth1740000000009,
     RefreshTokensSubjectType1740000000010,
     DropRefreshTokensCustomerFk1740000000011,
+    KycUploadPipeline1740000000012,
   ],
   synchronize: false,
   logging: process.env.NODE_ENV === 'development',

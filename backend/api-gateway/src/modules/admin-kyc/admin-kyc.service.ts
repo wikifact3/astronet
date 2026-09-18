@@ -3,13 +3,13 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { KycDocument, KycStatus } from '../../database/entities/kyc-document.entity';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { KycDocument, KycStatus, KycPipelineStatus } from '../../database/entities/kyc-document.entity';
 import { Customer } from '../../database/entities/customer.entity';
 import { Account } from '../../database/entities/account.entity';
-import {
-  KycReviewAction,
-  ReviewKycDto,
-} from './dto/review-kyc.dto';
+import { S3Service } from '../storage/s3.service';
+import { KycReviewAction, ReviewKycDto } from './dto/review-kyc.dto';
 
 export interface KycQueueItem {
   id: string;
@@ -19,15 +19,25 @@ export interface KycQueueItem {
   customerPhone: string;
   documentType: string;
   status: KycStatus;
+  pipelineStatus: KycPipelineStatus;
+  mimeType: string | null;
+  fileSizeBytes: number | null;
   createdAt: string;
   reviewedAt: string | null;
+  scanResult: string | null;
 }
 
 export interface KycDetail extends KycQueueItem {
-  encryptedFileRef: string;
+  storageKey: string | null;
   reviewReasonCode: string | null;
   reviewNotes: string | null;
   reviewedBy: string | null;
+}
+
+export interface SignedFileUrl {
+  url: string;
+  expiresAt: string;
+  mimeType: string | null;
 }
 
 @Injectable()
@@ -41,13 +51,16 @@ export class AdminKycService {
     private readonly accountRepo: Repository<Account>,
     @InjectRepository(Customer)
     private readonly customerRepo: Repository<Customer>,
+    private readonly s3: S3Service,
+    private readonly configService: ConfigService,
+    private readonly jwt: JwtService,
   ) {}
 
   async list(status?: KycStatus): Promise<KycQueueItem[]> {
     const qb = this.kycRepo
       .createQueryBuilder('k')
       .orderBy(
-        `CASE WHEN k.status = 'pending' THEN 0 ELSE 1 END`,
+        `CASE WHEN k.status = 'pending' AND k.pipeline_status = 'verified' THEN 0 ELSE 1 END`,
         'ASC',
       )
       .addOrderBy('k.created_at', 'DESC')
@@ -66,7 +79,7 @@ export class AdminKycService {
     const base = await this.toQueueItem(doc);
     return {
       ...base,
-      encryptedFileRef: doc.encryptedFileRef,
+      storageKey: doc.storageKey,
       reviewReasonCode: doc.reviewReasonCode,
       reviewNotes: doc.reviewNotes,
       reviewedBy: doc.reviewedBy,
@@ -87,6 +100,12 @@ export class AdminKycService {
       );
     }
 
+    if (doc.pipelineStatus !== KycPipelineStatus.VERIFIED) {
+      throw new BadRequestException(
+        `Document is not ready for review (pipeline=${doc.pipelineStatus})`,
+      );
+    }
+
     doc.status =
       dto.action === KycReviewAction.APPROVE
         ? KycStatus.APPROVED
@@ -101,9 +120,7 @@ export class AdminKycService {
       `KYC ${doc.id} reviewed by ${staffId}: ${dto.action} (${dto.reasonCode})`,
     );
 
-    // Cascade: approval moves the customer out of kyc_pending.
-    // (Account status transitions land in the CRM slice — for now we
-    // only flip the customer's own kyc_status so the customer sees it.)
+    // Cascade: update customer kyc_status
     const account = await this.accountRepo.findOne({ where: { id: doc.accountId } });
     if (account) {
       const customer = await this.customerRepo.findOne({ where: { id: account.customerId } });
@@ -117,6 +134,31 @@ export class AdminKycService {
     }
 
     return this.get(id);
+  }
+
+  /**
+   * Returns a short-lived presigned URL the admin's browser can hit
+   * directly. MinIO issues a real S3 presign; when we migrate to R2 or
+   * S3, this method's behavior is identical.
+   */
+  async signedUrl(id: string): Promise<SignedFileUrl> {
+    const doc = await this.kycRepo.findOne({ where: { id } });
+    if (!doc) throw new NotFoundException('KYC document not found');
+
+    const key = doc.storageKey ?? doc.quarantineKey;
+    if (!key) {
+      throw new BadRequestException('Document has no stored file');
+    }
+
+    const bucket: 'approved' | 'quarantine' = doc.storageKey ? 'approved' : 'quarantine';
+    const ttl = this.configService.get<number>('kyc.signedUrlTtlSeconds', 300);
+    const url = await this.s3.presignGet(bucket, key, ttl);
+
+    return {
+      url,
+      expiresAt: new Date(Date.now() + ttl * 1000).toISOString(),
+      mimeType: doc.mimeType,
+    };
   }
 
   private async toQueueItem(doc: KycDocument): Promise<KycQueueItem> {
@@ -133,8 +175,12 @@ export class AdminKycService {
       customerPhone: customer?.phone ?? '',
       documentType: doc.documentType,
       status: doc.status,
+      pipelineStatus: doc.pipelineStatus,
+      mimeType: doc.mimeType,
+      fileSizeBytes: doc.fileSizeBytes ? parseInt(doc.fileSizeBytes, 10) : null,
       createdAt: doc.createdAt.toISOString(),
       reviewedAt: doc.reviewedAt ? doc.reviewedAt.toISOString() : null,
+      scanResult: doc.scanResult,
     };
   }
 }
