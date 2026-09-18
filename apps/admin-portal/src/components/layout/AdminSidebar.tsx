@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const ITEMS = [
+  { href: '/admin/accounts', label: 'CRM' },
   { href: '/admin/kyc', label: 'KYC review' },
   // Future sections render as disabled placeholders
-  { href: '#', label: 'CRM', disabled: true },
   { href: '#', label: 'Tickets', disabled: true },
   { href: '#', label: 'Billing', disabled: true },
   { href: '#', label: 'NOC', disabled: true },

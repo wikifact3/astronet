@@ -15,6 +15,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { TicketsModule } from './modules/tickets/tickets.module';
 import { AdminAuthModule } from './modules/admin-auth/admin-auth.module';
 import { AdminKycModule } from './modules/admin-kyc/admin-kyc.module';
+import { AdminCrmModule } from './modules/admin-crm/admin-crm.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { KycUploadModule } from './modules/kyc/kyc-upload/kyc-upload.module';
 import { KycScanProcessorModule } from './modules/kyc/kyc-scan/kyc-scan.module';
@@ -81,6 +82,7 @@ import kycConfig from './config/kyc.config';
     TicketsModule, 
      AdminAuthModule,
     AdminKycModule,
+    AdminCrmModule,
     StorageModule,
     KycUploadModule,
     KycScanProcessorModule,

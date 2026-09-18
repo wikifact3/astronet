@@ -180,6 +180,44 @@ export type KycReviewReasonCode =
 
 // ---------- Endpoints ----------
 
+export type AccountStatus =
+  | 'lead'
+  | 'kyc_pending'
+  | 'kyc_rejected'
+  | 'installation_scheduled'
+  | 'active'
+  | 'suspended'
+  | 'churned';
+
+export interface AccountSummary {
+  id: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string | null;
+  accountType: string;
+  status: AccountStatus;
+  referralCode: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AccountDetail extends AccountSummary {
+  installationAddress: object | null;
+  billingAddress: object | null;
+  gpsCoordinates: object | null;
+  kycStatus: string;
+  transitions: Array<{
+    id: string;
+    fromStatus: string | null;
+    toStatus: string;
+    reason: string | null;
+    actorId: string | null;
+    actorType: string;
+    createdAt: string;
+  }>;
+}
+
 export const api = {
   adminAuth: {
     login: (email: string, password: string) =>
@@ -193,6 +231,23 @@ export const api = {
       request<{ ok: boolean }>('/admin/auth/logout', {
         method: 'POST',
         skipAuth: true,
+      }),
+  },
+  adminCrm: {
+    list: (params?: { status?: AccountStatus; search?: string; limit?: number; page?: number }) => {
+      const qs = new URLSearchParams();
+      if (params?.status) qs.set('status', params.status);
+      if (params?.search) qs.set('search', params.search);
+      if (params?.limit) qs.set('limit', String(params.limit));
+      if (params?.page) qs.set('page', String(params.page));
+      const suffix = qs.toString() ? `?${qs}` : '';
+      return request<{ accounts: AccountSummary[]; total: number }>(`/admin/accounts${suffix}`);
+    },
+    get: (id: string) => request<AccountDetail>(`/admin/accounts/${id}`),
+    transition: (id: string, body: { toStatus: AccountStatus; reason?: string }) =>
+      request<AccountDetail>(`/admin/accounts/${id}/transition`, {
+        method: 'POST',
+        body: JSON.stringify(body),
       }),
   },
   adminKyc: {

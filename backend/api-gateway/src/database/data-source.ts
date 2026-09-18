@@ -35,6 +35,7 @@ import { StaffAuth1740000000009 } from './migrations/1740000000009-StaffAuth';
 import { RefreshTokensSubjectType1740000000010 } from './migrations/1740000000010-RefreshTokensSubjectType';
 import { DropRefreshTokensCustomerFk1740000000011 } from './migrations/1740000000011-DropRefreshTokensCustomerFk';
 import { KycUploadPipeline1740000000012 } from './migrations/1740000000012-KycUploadPipeline';
+import { AccountStatusTransitions1740000000013 } from './migrations/1740000000013-AccountStatusTransitions';
 
 config();
 
@@ -64,6 +65,7 @@ const AppDataSource = new DataSource({
     RefreshTokensSubjectType1740000000010,
     DropRefreshTokensCustomerFk1740000000011,
     KycUploadPipeline1740000000012,
+    AccountStatusTransitions1740000000013,
   ],
   synchronize: false,
   logging: process.env.NODE_ENV === 'development',
