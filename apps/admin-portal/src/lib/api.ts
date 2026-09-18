@@ -28,7 +28,7 @@ export function setUnauthorizedHandler(fn: (() => void) | null): void {
   onUnauthorized = fn;
 }
 
-function getBaseUrl(): string {
+export function getBaseUrl(): string {
   const isServer = typeof window === 'undefined';
   if (isServer) {
     const internal = process.env.API_INTERNAL_URL;
@@ -128,6 +128,16 @@ export interface AdminLoginResponse {
   staff: AdminStaff;
 }
 
+export type KycPipelineStatus =
+  | 'upload_pending'
+  | 'uploaded'
+  | 'scanning'
+  | 'processing'
+  | 'verified'
+  | 'rejected'
+  | 'failed'
+  | 'expired';
+
 export interface KycQueueItem {
   id: string;
   accountId: string;
@@ -136,15 +146,25 @@ export interface KycQueueItem {
   customerPhone: string;
   documentType: string;
   status: 'pending' | 'approved' | 'rejected';
+  pipelineStatus: KycPipelineStatus;
+  mimeType: string | null;
+  fileSizeBytes: number | null;
   createdAt: string;
   reviewedAt: string | null;
+  scanResult: string | null;
 }
 
 export interface KycDetail extends KycQueueItem {
-  encryptedFileRef: string;
+  storageKey: string | null;
   reviewReasonCode: string | null;
   reviewNotes: string | null;
   reviewedBy: string | null;
+}
+
+export interface KycSignedUrl {
+  url: string;
+  expiresAt: string;
+  mimeType: string | null;
 }
 
 export type KycReviewAction = 'approve' | 'reject';
@@ -176,6 +196,9 @@ export const api = {
       }),
   },
   adminKyc: {
+    fileUrl: (id: string) => `${getBaseUrl()}/admin/kyc/${id}/file`,
+    signedUrl: (id: string) =>
+      request<KycSignedUrl>(`/admin/kyc/${id}/signed-url`, { method: 'POST' }),
     list: (status?: 'pending' | 'approved' | 'rejected') => {
       const suffix = status ? `?status=${status}` : '';
       return request<{ documents: KycQueueItem[] }>(`/admin/kyc${suffix}`);

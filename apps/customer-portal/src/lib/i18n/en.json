@@ -56,7 +56,8 @@
     "autoRenewOn": "Auto-renew is on",
     "autoRenewOff": "Auto-renew is off",
     "invoicesLink": "View invoices",
-    "supportLink": "Support"
+    "supportLink": "Support",
+    "kycLink": "Documents"
   },
   "renew": {
     "title": "Renew your plan",
@@ -177,5 +178,52 @@
     "resolved": "Resolved",
     "reopened": "Reopened",
     "closed": "Closed"
+  },
+  "kyc": {
+    "title": "Your documents",
+    "subtitle": "Upload the documents we need to complete your verification.",
+    "empty": "No documents uploaded yet.",
+    "upload": "Upload",
+    "replace": "Replace",
+    "uploading": "Uploading…",
+    "back": "Back",
+    "pickDocumentType": "Choose document type",
+    "selectFile": "Select file",
+    "noFileSelected": "No file selected",
+    "maxSize": "Max {mb} MB",
+    "allowedFormats": "JPG, PNG, or PDF",
+    "submit": "Upload document",
+    "submitting": "Uploading…",
+    "status": "Status",
+    "submitted": "Submitted",
+    "reviewed": "Reviewed",
+    "reason": "Reason",
+    "notes": "Notes",
+    "view": "View",
+    "uploadedFile": "{name} · {size}",
+    "errors": {
+      "tooLarge": "File exceeds {mb} MB",
+      "badType": "Only JPG, PNG, and PDF are allowed",
+      "uploadFailed": "Upload failed. Please try again.",
+      "generic": "Something went wrong"
+    },
+    "pipeline": {
+      "upload_pending": "Preparing",
+      "uploaded": "Queued for scan",
+      "scanning": "Scanning",
+      "processing": "Processing",
+      "verified": "Verified",
+      "rejected": "Rejected",
+      "failed": "Failed",
+      "expired": "Expired"
+    },
+    "docType": {
+      "citizenship_front": "Citizenship — front",
+      "citizenship_back": "Citizenship — back",
+      "passport": "Passport",
+      "utility_bill": "Utility bill",
+      "other": "Other"
+    },
+    "stillScanning": "Still scanning. This page will update automatically."
   }
 }

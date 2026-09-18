@@ -3,9 +3,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import type { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { KycDocument, KycStatus, KycPipelineStatus } from '../../database/entities/kyc-document.entity';
+import {
+  KycDocument, KycStatus, KycPipelineStatus,
+} from '../../database/entities/kyc-document.entity';
 import { Customer } from '../../database/entities/customer.entity';
 import { Account } from '../../database/entities/account.entity';
 import { S3Service } from '../storage/s3.service';
@@ -120,10 +123,11 @@ export class AdminKycService {
       `KYC ${doc.id} reviewed by ${staffId}: ${dto.action} (${dto.reasonCode})`,
     );
 
-    // Cascade: update customer kyc_status
     const account = await this.accountRepo.findOne({ where: { id: doc.accountId } });
     if (account) {
-      const customer = await this.customerRepo.findOne({ where: { id: account.customerId } });
+      const customer = await this.customerRepo.findOne({
+        where: { id: account.customerId },
+      });
       if (customer) {
         customer.kycStatus =
           doc.status === KycStatus.APPROVED
@@ -136,19 +140,12 @@ export class AdminKycService {
     return this.get(id);
   }
 
-  /**
-   * Returns a short-lived presigned URL the admin's browser can hit
-   * directly. MinIO issues a real S3 presign; when we migrate to R2 or
-   * S3, this method's behavior is identical.
-   */
   async signedUrl(id: string): Promise<SignedFileUrl> {
     const doc = await this.kycRepo.findOne({ where: { id } });
     if (!doc) throw new NotFoundException('KYC document not found');
 
     const key = doc.storageKey ?? doc.quarantineKey;
-    if (!key) {
-      throw new BadRequestException('Document has no stored file');
-    }
+    if (!key) throw new BadRequestException('Document has no stored file');
 
     const bucket: 'approved' | 'quarantine' = doc.storageKey ? 'approved' : 'quarantine';
     const ttl = this.configService.get<number>('kyc.signedUrlTtlSeconds', 300);
@@ -159,6 +156,50 @@ export class AdminKycService {
       expiresAt: new Date(Date.now() + ttl * 1000).toISOString(),
       mimeType: doc.mimeType,
     };
+  }
+
+  /**
+   * Streams the KYC file bytes through the API. Used when the object
+   * store's public endpoint isn't reachable from the browser — Codespaces
+   * port forwarding rewrites the Host header, which breaks SigV4 on
+   * presigned URLs. The API has no such problem: it talks to MinIO over
+   * the internal Docker network using the endpoint the signature was
+   * computed for.
+   */
+  async streamFile(id: string, res: Response): Promise<void> {
+    const doc = await this.kycRepo.findOne({ where: { id } });
+    if (!doc) {
+      res.status(404).send('Document not found');
+      return;
+    }
+
+    const key = doc.storageKey ?? doc.quarantineKey;
+    if (!key) {
+      res.status(404).send('No file stored for this document');
+      return;
+    }
+
+    const bucket: 'approved' | 'quarantine' = doc.storageKey
+      ? 'approved'
+      : 'quarantine';
+
+    try {
+      const { body } = await this.s3.getObject(bucket, key);
+
+      res.setHeader('Content-Type', doc.mimeType ?? 'application/octet-stream');
+      if (doc.fileSizeBytes) {
+        res.setHeader('Content-Length', doc.fileSizeBytes);
+      }
+      res.setHeader('Cache-Control', 'private, max-age=60, must-revalidate');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+
+      body.pipe(res);
+    } catch (err) {
+      this.logger.error(
+        `streamFile failed for doc=${id}: ${(err as Error).message}`,
+      );
+      res.status(500).send('Failed to read document');
+    }
   }
 
   private async toQueueItem(doc: KycDocument): Promise<KycQueueItem> {

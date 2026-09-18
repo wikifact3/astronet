@@ -266,6 +266,42 @@ export interface TicketDetail extends TicketSummary {
   }>;
 }
 
+export type KycDocumentType =
+  | 'citizenship_front'
+  | 'citizenship_back'
+  | 'passport'
+  | 'utility_bill'
+  | 'other';
+
+export type KycPipelineStatus =
+  | 'upload_pending'
+  | 'uploaded'
+  | 'scanning'
+  | 'processing'
+  | 'verified'
+  | 'rejected'
+  | 'failed'
+  | 'expired';
+
+export interface KycDocument {
+  id: string;
+  documentType: KycDocumentType;
+  pipelineStatus: KycPipelineStatus;
+  mimeType: string | null;
+  fileSizeBytes: number | null;
+  createdAt: string;
+  reviewedAt: string | null;
+  reviewReasonCode: string | null;
+  reviewNotes: string | null;
+  scanResult: string | null;
+}
+
+export interface KycSession {
+  id: string;
+  documentType: KycDocumentType;
+  expiresAt: string;
+}
+
 export const api = {
   auth: {
     requestOtp: (phone: string) =>
@@ -338,6 +374,50 @@ export const api = {
       }),
     reopen: (id: string) =>
       request<TicketDetail>(`/tickets/${id}/reopen`, { method: 'POST' }),
+  },
+
+  kyc: {
+    listDocuments: () =>
+      request<{ documents: KycDocument[] }>('/kyc/documents'),
+    createSession: (documentType: KycDocumentType) =>
+      request<KycSession>('/kyc/sessions', {
+        method: 'POST',
+        body: JSON.stringify({ documentType }),
+      }),
+    upload: async (sessionId: string, file: File) => {
+      const base = getBaseUrl();
+      const form = new FormData();
+      form.append('file', file);
+
+      const headers: Record<string, string> = {};
+      if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+
+      const res = await fetch(`${base}/kyc/upload/${sessionId}`, {
+        method: 'POST',
+        body: form,
+        headers,
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        let code = 'UNKNOWN';
+        let message = res.statusText;
+        try {
+          const body = await res.json();
+          if (body?.error) {
+            code = body.error.code ?? code;
+            message = body.error.message ?? message;
+          } else if (body?.message) {
+            message = Array.isArray(body.message) ? body.message.join(', ') : body.message;
+          }
+        } catch {
+          /* non-JSON */
+        }
+        throw new ApiError(res.status, code, message);
+      }
+
+      return (await res.json()) as KycDocument;
+    },
   },
 };
 

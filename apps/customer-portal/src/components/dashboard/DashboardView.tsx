@@ -100,6 +100,12 @@ export function DashboardView({ locale, dict }: Props) {
           >
             {t(dict, 'dashboard.supportLink')}
           </Link>
+          <Link
+            href={`/${locale}/kyc`}
+            className="btn btn-outline text-xs whitespace-nowrap"
+          >
+            {t(dict, 'dashboard.kycLink')}
+          </Link>
         </div>
       </div>
 

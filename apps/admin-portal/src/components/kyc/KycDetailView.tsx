@@ -4,14 +4,20 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  api, ApiError,
+  api,
+  ApiError,
+  getAccessToken,
   type KycDetail,
   type KycReviewAction,
   type KycReviewReasonCode,
 } from '@/lib/api';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 
-const REASON_CODES: { value: KycReviewReasonCode; label: string; for: KycReviewAction }[] = [
+const REASON_CODES: {
+  value: KycReviewReasonCode;
+  label: string;
+  for: KycReviewAction;
+}[] = [
   { value: 'document_clear', label: 'Document is clear and matches', for: 'approve' },
   { value: 'document_illegible', label: 'Document is illegible / low quality', for: 'reject' },
   { value: 'document_expired', label: 'Document has expired', for: 'reject' },
@@ -26,6 +32,8 @@ export function KycDetailView({ documentId }: { documentId: string }) {
   const { staff, ready } = useAdminAuth();
 
   const [doc, setDoc] = useState<KycDetail | null>(null);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [blobError, setBlobError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [action, setAction] = useState<KycReviewAction>('approve');
@@ -36,8 +44,8 @@ export function KycDetailView({ documentId }: { documentId: string }) {
   const load = useCallback(async () => {
     setError(null);
     try {
-      const res = await api.adminKyc.get(documentId);
-      setDoc(res);
+      const d = await api.adminKyc.get(documentId);
+      setDoc(d);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'Failed to load';
       setError(msg);
@@ -55,7 +63,49 @@ export function KycDetailView({ documentId }: { documentId: string }) {
     void load();
   }, [ready, staff, load]);
 
-  // Keep reason code in sync with selected action
+  useEffect(() => {
+    if (!doc) return;
+    if (doc.pipelineStatus !== 'verified' && doc.pipelineStatus !== 'rejected') {
+      return;
+    }
+
+    let cancelled = false;
+    let revoke: string | null = null;
+
+    (async () => {
+      setBlobError(null);
+      try {
+        const token = getAccessToken();
+        const res = await fetch(api.adminKyc.fileUrl(documentId), {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          credentials: 'include',
+        });
+
+        if (!res.ok) {
+          if (!cancelled) setBlobError(`Could not load file (${res.status})`);
+          return;
+        }
+
+        const blob = await res.blob();
+        if (cancelled) return;
+
+        const url = URL.createObjectURL(blob);
+        revoke = url;
+        setBlobUrl(url);
+      } catch (err) {
+        if (!cancelled) {
+          setBlobError(err instanceof Error ? err.message : 'Could not load file');
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (revoke) URL.revokeObjectURL(revoke);
+      setBlobUrl(null);
+    };
+  }, [doc, documentId]);
+
   useEffect(() => {
     const valid = REASON_CODES.filter((r) => r.for === action);
     if (!valid.some((r) => r.value === reasonCode)) {
@@ -87,13 +137,12 @@ export function KycDetailView({ documentId }: { documentId: string }) {
 
   const availableReasons = REASON_CODES.filter((r) => r.for === action);
   const isReviewed = doc !== null && doc.status !== 'pending';
+  const canReview =
+    doc !== null && doc.status === 'pending' && doc.pipelineStatus === 'verified';
 
   return (
     <div className="container-admin py-8">
-      <Link
-        href="/admin/kyc"
-        className="text-sm text-admin-500 hover:text-admin-700"
-      >
+      <Link href="/admin/kyc" className="text-sm text-admin-500 hover:text-admin-700">
         ← Back to queue
       </Link>
 
@@ -110,12 +159,15 @@ export function KycDetailView({ documentId }: { documentId: string }) {
       {doc !== null && (
         <div className="mt-6 grid gap-8 lg:grid-cols-[2fr_1fr]">
           <div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-xl font-semibold text-admin-900">
                 {doc.customerName}
               </h1>
               <span className={`badge ${statusBadgeClass(doc.status)}`}>
                 {doc.status}
+              </span>
+              <span className={`badge ${pipelineBadgeClass(doc.pipelineStatus)}`}>
+                {doc.pipelineStatus}
               </span>
             </div>
             <p className="mt-1 text-sm text-admin-600">
@@ -124,25 +176,10 @@ export function KycDetailView({ documentId }: { documentId: string }) {
 
             <div className="card mt-6 overflow-hidden">
               <div className="border-b border-admin-200 bg-admin-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-admin-500">
-                Document preview
+                Document
               </div>
-              <div className="flex h-96 items-center justify-center bg-admin-100 text-center text-sm text-admin-500">
-                <div>
-                  <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-admin-200 text-lg">
-                    🖼️
-                  </div>
-                  <p className="mt-3 px-6">
-                    Document preview not yet available. File reference:
-                    <br />
-                    <code className="mt-1 inline-block rounded bg-white px-2 py-1 text-xs">
-                      {doc.encryptedFileRef}
-                    </code>
-                  </p>
-                  <p className="mt-2 px-6 text-xs text-admin-400">
-                    The decryption + signed URL pipeline lands when the KYC
-                    upload flow is built.
-                  </p>
-                </div>
+              <div className="flex min-h-[24rem] items-center justify-center bg-admin-100">
+                <DocumentPreview doc={doc} blobUrl={blobUrl} blobError={blobError} />
               </div>
             </div>
           </div>
@@ -157,6 +194,11 @@ export function KycDetailView({ documentId }: { documentId: string }) {
                   label="Submitted"
                   value={doc.createdAt.slice(0, 16).replace('T', ' ')}
                 />
+                {doc.mimeType && <Row label="Type" value={doc.mimeType} />}
+                {doc.fileSizeBytes !== null && (
+                  <Row label="Size" value={formatBytes(doc.fileSizeBytes)} />
+                )}
+                {doc.scanResult && <Row label="Scan" value={doc.scanResult} />}
                 {doc.reviewedAt && (
                   <Row
                     label="Reviewed"
@@ -174,6 +216,15 @@ export function KycDetailView({ documentId }: { documentId: string }) {
                   <Row label="Reason" value={doc.reviewReasonCode ?? '—'} />
                   <Row label="Notes" value={doc.reviewNotes ?? '—'} />
                 </dl>
+              </div>
+            ) : !canReview ? (
+              <div className="card mt-4 p-5 text-xs text-admin-600">
+                <h2 className="text-sm font-semibold text-admin-900">Not ready</h2>
+                <p className="mt-2">
+                  This document is still in the pipeline (
+                  <code>{doc.pipelineStatus}</code>). Review becomes available once it
+                  reaches <code>verified</code>.
+                </p>
               </div>
             ) : (
               <form onSubmit={onSubmit} className="card mt-4 p-5">
@@ -209,9 +260,7 @@ export function KycDetailView({ documentId }: { documentId: string }) {
                   <select
                     className="input mt-1"
                     value={reasonCode}
-                    onChange={(e) =>
-                      setReasonCode(e.target.value as KycReviewReasonCode)
-                    }
+                    onChange={(e) => setReasonCode(e.target.value as KycReviewReasonCode)}
                   >
                     {availableReasons.map((r) => (
                       <option key={r.value} value={r.value}>
@@ -255,11 +304,73 @@ export function KycDetailView({ documentId }: { documentId: string }) {
   );
 }
 
+function DocumentPreview({
+  doc,
+  blobUrl,
+  blobError,
+}: {
+  doc: KycDetail;
+  blobUrl: string | null;
+  blobError: string | null;
+}) {
+  if (blobError) {
+    return (
+      <div className="p-6 text-center text-sm text-admin-500">
+        <p>{blobError}</p>
+      </div>
+    );
+  }
+
+  if (!blobUrl) {
+    return (
+      <div className="p-6 text-center text-sm text-admin-500">
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-admin-200 text-lg">
+          🖼️
+        </div>
+        <p className="mt-3">
+          {doc.pipelineStatus === 'verified' || doc.pipelineStatus === 'rejected'
+            ? 'Loading document…'
+            : `Pipeline status: ${doc.pipelineStatus}. Preview appears once the document is scanned.`}
+        </p>
+      </div>
+    );
+  }
+
+  const isImage = doc.mimeType?.startsWith('image/');
+  const isPdf = doc.mimeType === 'application/pdf';
+
+  if (isImage) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return (
+      <img
+        src={blobUrl}
+        alt="KYC document"
+        className="max-h-[40rem] w-full object-contain"
+      />
+    );
+  }
+
+  if (isPdf) {
+    return (
+      <iframe src={blobUrl} title="KYC document" className="h-[40rem] w-full" />
+    );
+  }
+
+  return (
+    <div className="p-6 text-center text-sm text-admin-500">
+      Preview not supported for {doc.mimeType ?? 'this type'}.{' '}
+      <a href={blobUrl} download className="text-brand-600 hover:underline">
+        Download file
+      </a>
+    </div>
+  );
+}
+
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-3">
       <dt className="text-admin-500">{label}</dt>
-      <dd className="text-right font-medium text-admin-900">{value}</dd>
+      <dd className="break-all text-right font-medium text-admin-900">{value}</dd>
     </div>
   );
 }
@@ -275,4 +386,28 @@ function statusBadgeClass(status: KycDetail['status']): string {
     default:
       return 'bg-admin-100 text-admin-700';
   }
+}
+
+function pipelineBadgeClass(status: KycDetail['pipelineStatus']): string {
+  switch (status) {
+    case 'verified':
+      return 'bg-emerald-100 text-emerald-800';
+    case 'rejected':
+    case 'failed':
+    case 'expired':
+      return 'bg-red-100 text-red-800';
+    case 'scanning':
+    case 'processing':
+    case 'uploaded':
+    case 'upload_pending':
+      return 'bg-amber-100 text-amber-800';
+    default:
+      return 'bg-admin-100 text-admin-700';
+  }
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }

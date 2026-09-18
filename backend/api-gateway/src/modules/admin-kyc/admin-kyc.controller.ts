@@ -1,6 +1,7 @@
 import {
-  Body, Controller, Get, Param, Post, Query, UseGuards,
+  Body, Controller, Get, Param, Post, Query, Res, UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
 import { RolesGuard } from '../admin-auth/guards/roles.guard';
 import { Roles } from '../admin-auth/decorators/roles.decorator';
@@ -19,6 +20,11 @@ export class AdminKycController {
   @Get()
   async list(@Query('status') status?: KycStatus) {
     return { documents: await this.kycService.list(status) };
+  }
+
+  @Get(':id/file')
+  async streamFile(@Param('id') id: string, @Res() res: Response) {
+    await this.kycService.streamFile(id, res);
   }
 
   @Get(':id')

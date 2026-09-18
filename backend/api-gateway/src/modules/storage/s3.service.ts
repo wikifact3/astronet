@@ -14,24 +14,46 @@ import { Readable } from 'stream';
 @Injectable()
 export class S3Service implements OnModuleInit {
   private readonly logger = new Logger(S3Service.name);
-  private readonly client: S3Client;
+  private readonly internalClient: S3Client;
+  private readonly publicClient: S3Client;
   private readonly buckets: { quarantine: string; approved: string; invoices: string };
 
   constructor(private readonly configService: ConfigService) {
-    const cfg = this.configService.get('storage.s3');
-    this.client = new S3Client({
+    const cfg = this.configService.get('storage.s3') as {
+      endpoint: string;
+      region: string;
+      accessKey: string;
+      secretKey: string;
+      forcePathStyle: boolean;
+    };
+    const publicEndpoint = this.configService.get<string>('storage.publicEndpoint')!;
+
+    const credentials = {
+      accessKeyId: cfg.accessKey,
+      secretAccessKey: cfg.secretKey,
+    };
+
+    // Internal client: used for server-to-server operations (put/copy/delete).
+    // Talks to MinIO over the Docker network or localhost.
+    this.internalClient = new S3Client({
       endpoint: cfg.endpoint,
       region: cfg.region,
-      credentials: {
-        accessKeyId: cfg.accessKey,
-        secretAccessKey: cfg.secretKey,
-      },
+      credentials,
       forcePathStyle: cfg.forcePathStyle,
     });
+
+    // Public client: used ONLY for signing URLs that a browser will fetch.
+    // The host component of a presigned URL is part of the signature, so
+    // it must match what the browser actually connects to.
+    this.publicClient = new S3Client({
+      endpoint: publicEndpoint,
+      region: cfg.region,
+      credentials,
+      forcePathStyle: cfg.forcePathStyle,
+    });
+
     this.buckets =
-      this.configService.get<{ quarantine: string; approved: string; invoices: string }>(
-        'storage.buckets',
-      ) ?? {
+      (this.configService.get('storage.buckets') as typeof this.buckets) ?? {
         quarantine: 'powerlink-kyc-quarantine',
         approved: 'powerlink-kyc-approved',
         invoices: 'powerlink-invoices',
@@ -39,12 +61,10 @@ export class S3Service implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    // Fail fast if MinIO / S3 isn't reachable — otherwise the first upload
-    // would fail with a confusing error.
     try {
       await Promise.all([
-        this.client.send(new HeadBucketCommand({ Bucket: this.buckets.quarantine })),
-        this.client.send(new HeadBucketCommand({ Bucket: this.buckets.approved })),
+        this.internalClient.send(new HeadBucketCommand({ Bucket: this.buckets.quarantine })),
+        this.internalClient.send(new HeadBucketCommand({ Bucket: this.buckets.approved })),
       ]);
       this.logger.log(
         `S3 reachable (quarantine=${this.buckets.quarantine} approved=${this.buckets.approved})`,
@@ -62,13 +82,12 @@ export class S3Service implements OnModuleInit {
     body: Buffer,
     contentType: string,
   ): Promise<void> {
-    await this.client.send(
+    await this.internalClient.send(
       new PutObjectCommand({
         Bucket: this.buckets[bucket],
         Key: key,
         Body: body,
         ContentType: contentType,
-        // SSE-S3 with a KMS-managed key would go here in Phase 2
       }),
     );
   }
@@ -77,7 +96,7 @@ export class S3Service implements OnModuleInit {
     bucket: 'quarantine' | 'approved' | 'invoices',
     key: string,
   ): Promise<{ body: Readable; contentType: string; contentLength: number | null }> {
-    const res = await this.client.send(
+    const res = await this.internalClient.send(
       new GetObjectCommand({ Bucket: this.buckets[bucket], Key: key }),
     );
     if (!res.Body) throw new Error('Empty object body');
@@ -94,7 +113,7 @@ export class S3Service implements OnModuleInit {
     toBucket: 'quarantine' | 'approved',
     toKey: string,
   ): Promise<void> {
-    await this.client.send(
+    await this.internalClient.send(
       new CopyObjectCommand({
         Bucket: this.buckets[toBucket],
         CopySource: `${this.buckets[fromBucket]}/${encodeURIComponent(fromKey)}`,
@@ -107,17 +126,15 @@ export class S3Service implements OnModuleInit {
     bucket: 'quarantine' | 'approved',
     key: string,
   ): Promise<void> {
-    await this.client.send(
+    await this.internalClient.send(
       new DeleteObjectCommand({ Bucket: this.buckets[bucket], Key: key }),
     );
   }
 
   /**
-   * Returns a short-lived URL the caller can hit directly. On MinIO this
-   * is a full S3 pre-signed URL that bypasses our API entirely — the
-   * exact same shape Cloudflare R2 and S3 return. In Phase 1 we still
-   * gate access through the API for KYC (see signedUrl config), but the
-   * method exists so invoice PDFs can use direct URLs immediately.
+   * Signs a GET URL against the PUBLIC endpoint so a browser can fetch it.
+   * Never sign with the internal client for browser-facing URLs — the host
+   * is part of the signature.
    */
   async presignGet(
     bucket: 'quarantine' | 'approved' | 'invoices',
@@ -125,7 +142,7 @@ export class S3Service implements OnModuleInit {
     ttlSeconds: number,
   ): Promise<string> {
     return getSignedUrl(
-      this.client,
+      this.publicClient,
       new GetObjectCommand({ Bucket: this.buckets[bucket], Key: key }),
       { expiresIn: ttlSeconds },
     );

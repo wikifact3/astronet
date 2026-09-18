@@ -107,7 +107,8 @@ export function KycQueueView() {
                 <th className="th">Customer</th>
                 <th className="th">Phone</th>
                 <th className="th">Document</th>
-                <th className="th">Status</th>
+                <th className="th">Review</th>
+                <th className="th">Pipeline</th>
                 <th className="th">Submitted</th>
                 <th className="th" />
               </tr>
@@ -123,6 +124,11 @@ export function KycQueueView() {
                   <td className="td">
                     <span className={`badge ${statusBadgeClass(doc.status)}`}>
                       {doc.status}
+                    </span>
+                  </td>
+                  <td className="td">
+                    <span className={`badge ${pipelineBadgeClass(doc.pipelineStatus)}`}>
+                      {doc.pipelineStatus}
                     </span>
                   </td>
                   <td className="td text-admin-600">
@@ -154,6 +160,24 @@ function statusBadgeClass(status: KycQueueItem['status']): string {
       return 'bg-green-100 text-green-800';
     case 'rejected':
       return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-admin-100 text-admin-700';
+  }
+}
+
+function pipelineBadgeClass(status: KycQueueItem['pipelineStatus']): string {
+  switch (status) {
+    case 'verified':
+      return 'bg-emerald-100 text-emerald-800';
+    case 'rejected':
+    case 'failed':
+    case 'expired':
+      return 'bg-red-100 text-red-800';
+    case 'scanning':
+    case 'processing':
+    case 'uploaded':
+    case 'upload_pending':
+      return 'bg-amber-100 text-amber-800';
     default:
       return 'bg-admin-100 text-admin-700';
   }

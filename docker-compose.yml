@@ -66,6 +66,7 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_SERVER_URL: "${MINIO_SERVER_URL}"
     ports:
       - "${MINIO_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
@@ -77,32 +78,6 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    networks:
-      - powerlink-network
-
-  minio-init:
-    image: quay.io/minio/mc:RELEASE.2024-10-08T09-37-26Z
-    container_name: powerlink-minio-init
-    depends_on:
-      minio:
-        condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      until mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD; do
-        echo 'waiting for minio...'
-        sleep 2
-      done
-      && mc mb --ignore-existing local/powerlink-kyc-quarantine
-      && mc mb --ignore-existing local/powerlink-kyc-approved
-      && mc mb --ignore-existing local/powerlink-invoices
-      && mc anonymous set none local/powerlink-kyc-quarantine
-      && mc anonymous set none local/powerlink-kyc-approved
-      && echo 'buckets ready'
-      "
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
-    restart: "no"
     networks:
       - powerlink-network
 
