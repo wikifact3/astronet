@@ -3,9 +3,13 @@ import {
   Injectable, NotFoundException, BadRequestException, Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { randomBytes } from 'crypto';
 import { Lead, LeadStatus } from '../../database/entities/lead.entity';
+import { Customer, KycStatus as CustomerKycStatus } from '../../database/entities/customer.entity';
+import { Account, AccountStatus, AccountType } from '../../database/entities/account.entity';
+import { DataSource } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import { CreateLeadDraftDto } from './dto/create-draft.dto';
 import { UpdateLeadDraftDto } from './dto/update-draft.dto';
 
@@ -23,6 +27,12 @@ export interface LeadDraftResponse {
   preferredPlanId: string | null;
   referenceId: string | null;
   submittedAt: string | null;
+  accountId: string | null;
+  verifiedBy: string | null;
+  verifiedAt: string | null;
+  promotedBy: string | null;
+  promotedAt: string | null;
+  internalNotes: string | null;
 }
 
 @Injectable()
@@ -32,6 +42,8 @@ export class LeadsService {
   constructor(
     @InjectRepository(Lead)
     private readonly leadRepo: Repository<Lead>,
+    private readonly dataSource: DataSource,
+    private readonly configService: ConfigService,
   ) {}
 
   async createDraft(dto: CreateLeadDraftDto): Promise<LeadDraftResponse> {
@@ -105,13 +117,207 @@ export class LeadsService {
     }
 
     const referenceId = await this.generateReferenceId();
-    lead.status = LeadStatus.SUBMITTED;
-    lead.referenceId = referenceId;
-    lead.submittedAt = new Date();
 
-    const saved = await this.leadRepo.save(lead);
-    this.logger.log(`Lead submitted: ${saved.id} ref=${referenceId}`);
-    return this.toResponse(saved);
+    const autoPromote = this.configService.get<boolean>('leads.autoPromote', true);
+
+    if (!autoPromote) {
+      // Just mark the lead as submitted. An admin will verify and promote it
+      // through the CRM UI, which calls promoteLead() below.
+      lead.status = LeadStatus.SUBMITTED;
+      lead.referenceId = referenceId;
+      lead.submittedAt = new Date();
+      await this.leadRepo.save(lead);
+
+      this.logger.log(
+        `Lead submitted (pending manual promotion): ${lead.id} ref=${referenceId}`,
+      );
+      return this.toResponse(lead);
+    }
+
+    // Promote: find-or-create customer, then create account with status=lead.
+    // Runs in a transaction so a partial failure doesn't leave an orphan account.
+    const accountId = await this.dataSource.transaction(async (manager) => {
+      // Duplicate check: same phone already has a pending lead?
+      const existingLead = await manager.findOne(Lead, {
+        where: {
+          phone: lead.phone!,
+          status: In([LeadStatus.SUBMITTED, LeadStatus.CONTACTED]),
+        },
+      });
+      if (existingLead && existingLead.id !== lead.id) {
+        throw new BadRequestException(
+          'A pending request already exists for this phone number. Our team will be in touch.',
+        );
+      }
+
+      // Find or create the customer
+      let customer = await manager.findOne(Customer, {
+        where: { phone: lead.phone! },
+      });
+      if (!customer) {
+        customer = manager.create(Customer, {
+          phone: lead.phone!,
+          email: lead.email ?? null,
+          fullName: lead.fullName!,
+          preferredLanguage: 'en',
+          kycStatus: CustomerKycStatus.PENDING,
+        });
+        customer = await manager.save(customer);
+      } else {
+        // Existing customer: only fill in blanks, don't overwrite
+        if (!customer.fullName && lead.fullName) customer.fullName = lead.fullName;
+        if (!customer.email && lead.email) customer.email = lead.email;
+        await manager.save(customer);
+      }
+
+      // Create the account
+      const account = manager.create(Account, {
+        customerId: customer.id,
+        accountType: AccountType.RETAIL,
+        status: AccountStatus.LEAD,
+        installationAddress: {
+          province: lead.province,
+          district: lead.district,
+          municipality: lead.municipality,
+          ward: lead.ward,
+          street: lead.street,
+        },
+        gpsCoordinates:
+          lead.gpsLat !== null && lead.gpsLng !== null
+            ? { lat: Number(lead.gpsLat), lng: Number(lead.gpsLng) }
+            : null,
+        referralCode: this.generateReferralCode(),
+        parentAccountId: null,
+        referredById: null,
+      });
+      const saved = await manager.save(account);
+
+      // Update the lead with the link and submitted status
+      lead.status = LeadStatus.SUBMITTED;
+      lead.referenceId = referenceId;
+      lead.submittedAt = new Date();
+      lead.accountId = saved.id;
+      lead.promotedAt = new Date();
+      lead.promotedBy = null; // system
+      await manager.save(lead);
+
+      return saved.id;
+    });
+
+    this.logger.log(
+      `Lead submitted: ${lead.id} ref=${referenceId} account=${accountId}`,
+    );
+    return this.toResponse(lead);
+  }
+
+  /**
+   * Manual promotion. Called by an admin when auto-promote is off, or for
+   * any lead the team wants to move into an account manually. Idempotent:
+   * if the lead already has an account_id, returns it unchanged.
+   */
+  async promoteLead(
+    leadId: string,
+    staffId: string,
+  ): Promise<{ accountId: string; alreadyPromoted: boolean }> {
+    const lead = await this.leadRepo.findOne({ where: { id: leadId } });
+    if (!lead) throw new NotFoundException('Lead not found');
+
+    if (lead.accountId) {
+      return { accountId: lead.accountId, alreadyPromoted: true };
+    }
+    if (lead.status === LeadStatus.REJECTED || lead.status === LeadStatus.EXPIRED) {
+      throw new BadRequestException(`Cannot promote a ${lead.status} lead`);
+    }
+    if (!lead.phone || !lead.fullName) {
+      throw new BadRequestException('Lead is missing phone or name');
+    }
+
+    const accountId = await this.dataSource.transaction(async (manager) => {
+      let customer = await manager.findOne(Customer, {
+        where: { phone: lead.phone! },
+      });
+      if (!customer) {
+        customer = manager.create(Customer, {
+          phone: lead.phone!,
+          email: lead.email ?? null,
+          fullName: lead.fullName!,
+          preferredLanguage: 'en',
+          kycStatus: CustomerKycStatus.PENDING,
+        });
+        customer = await manager.save(customer);
+      } else {
+        if (!customer.fullName && lead.fullName) customer.fullName = lead.fullName;
+        if (!customer.email && lead.email) customer.email = lead.email;
+        await manager.save(customer);
+      }
+
+      const account = manager.create(Account, {
+        customerId: customer.id,
+        accountType: AccountType.RETAIL,
+        status: AccountStatus.LEAD,
+        installationAddress: {
+          province: lead.province,
+          district: lead.district,
+          municipality: lead.municipality,
+          ward: lead.ward,
+          street: lead.street,
+        },
+        gpsCoordinates:
+          lead.gpsLat !== null && lead.gpsLng !== null
+            ? { lat: Number(lead.gpsLat), lng: Number(lead.gpsLng) }
+            : null,
+        referralCode: this.generateReferralCode(),
+        parentAccountId: null,
+        referredById: null,
+      });
+      const saved = await manager.save(account);
+
+      lead.accountId = saved.id;
+      lead.promotedBy = staffId;
+      lead.promotedAt = new Date();
+      lead.status = LeadStatus.CONVERTED;
+      await manager.save(lead);
+
+      return saved.id;
+    });
+
+    this.logger.log(
+      `Lead ${leadId} manually promoted to account ${accountId} by staff=${staffId}`,
+    );
+    return { accountId, alreadyPromoted: false };
+  }
+
+  /**
+   * Mark a lead as verified (phone/email confirmed, coverage checked).
+   * Does not create an account — that is a separate action.
+   */
+  async verifyLead(
+    leadId: string,
+    staffId: string,
+    notes?: string,
+  ): Promise<LeadDraftResponse> {
+    const lead = await this.leadRepo.findOne({ where: { id: leadId } });
+    if (!lead) throw new NotFoundException('Lead not found');
+
+    if (lead.status === LeadStatus.REJECTED || lead.status === LeadStatus.EXPIRED) {
+      throw new BadRequestException(`Cannot verify a ${lead.status} lead`);
+    }
+
+    lead.verifiedBy = staffId;
+    lead.verifiedAt = new Date();
+    if (notes) lead.internalNotes = notes;
+    if (lead.status === LeadStatus.SUBMITTED) {
+      lead.status = LeadStatus.CONTACTED;
+    }
+    await this.leadRepo.save(lead);
+
+    this.logger.log(`Lead ${leadId} verified by staff=${staffId}`);
+    return this.toResponse(lead);
+  }
+
+  private generateReferralCode(): string {
+    const rand = randomBytes(4).toString('hex').toUpperCase();
+    return `PL${rand}`;
   }
 
   private async generateReferenceId(): Promise<string> {
@@ -136,6 +342,12 @@ export class LeadsService {
       preferredPlanId: lead.preferredPlanId,
       referenceId: lead.referenceId,
       submittedAt: lead.submittedAt ? lead.submittedAt.toISOString() : null,
+      accountId: lead.accountId ?? null,
+      verifiedBy: lead.verifiedBy ?? null,
+      verifiedAt: lead.verifiedAt ? lead.verifiedAt.toISOString() : null,
+      promotedBy: lead.promotedBy ?? null,
+      promotedAt: lead.promotedAt ? lead.promotedAt.toISOString() : null,
+      internalNotes: lead.internalNotes ?? null,
     };
   }
 }

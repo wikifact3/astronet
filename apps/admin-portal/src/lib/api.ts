@@ -218,6 +218,35 @@ export interface AccountDetail extends AccountSummary {
   }>;
 }
 
+export type LeadStatus =
+  | 'draft'
+  | 'submitted'
+  | 'needs_review'
+  | 'contacted'
+  | 'converted'
+  | 'rejected'
+  | 'expired';
+
+export interface AdminLead {
+  id: string;
+  referenceId: string | null;
+  fullName: string | null;
+  phone: string | null;
+  email: string | null;
+  province: string | null;
+  district: string | null;
+  municipality: string | null;
+  ward: string | null;
+  status: LeadStatus;
+  submittedAt: string | null;
+  accountId: string | null;
+  verifiedBy: string | null;
+  verifiedAt: string | null;
+  promotedBy: string | null;
+  promotedAt: string | null;
+  internalNotes: string | null;
+}
+
 export const api = {
   adminAuth: {
     login: (email: string, password: string) =>
@@ -231,6 +260,32 @@ export const api = {
       request<{ ok: boolean }>('/admin/auth/logout', {
         method: 'POST',
         skipAuth: true,
+      }),
+  },
+  adminLeads: {
+    list: (params?: { status?: LeadStatus; search?: string; limit?: number }) => {
+      const qs = new URLSearchParams();
+      if (params?.status) qs.set('status', params.status);
+      if (params?.search) qs.set('search', params.search);
+      if (params?.limit) qs.set('limit', String(params.limit));
+      const suffix = qs.toString() ? `?${qs}` : '';
+      return request<{ leads: AdminLead[]; total: number }>(`/admin/leads${suffix}`);
+    },
+    get: (id: string) => request<AdminLead>(`/admin/leads/${id}`),
+    verify: (id: string, notes?: string) =>
+      request<AdminLead>(`/admin/leads/${id}/verify`, {
+        method: 'POST',
+        body: JSON.stringify({ notes }),
+      }),
+    promote: (id: string) =>
+      request<{ lead: AdminLead; accountId: string; alreadyPromoted: boolean }>(
+        `/admin/leads/${id}/promote`,
+        { method: 'POST' },
+      ),
+    reject: (id: string, reason?: string) =>
+      request<AdminLead>(`/admin/leads/${id}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
       }),
   },
   adminCrm: {

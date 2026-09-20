@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const ITEMS = [
+  { href: '/admin/leads', label: 'Leads' },
   { href: '/admin/accounts', label: 'CRM' },
   { href: '/admin/kyc', label: 'KYC review' },
   // Future sections render as disabled placeholders

@@ -36,6 +36,8 @@ import { RefreshTokensSubjectType1740000000010 } from './migrations/174000000001
 import { DropRefreshTokensCustomerFk1740000000011 } from './migrations/1740000000011-DropRefreshTokensCustomerFk';
 import { KycUploadPipeline1740000000012 } from './migrations/1740000000012-KycUploadPipeline';
 import { AccountStatusTransitions1740000000013 } from './migrations/1740000000013-AccountStatusTransitions';
+import { LeadsAccountLink1740000000014 } from './migrations/1740000000014-LeadsAccountLink';
+import { LeadVerification1740000000015 } from './migrations/1740000000015-LeadVerification';
 
 config();
 
@@ -66,6 +68,8 @@ const AppDataSource = new DataSource({
     DropRefreshTokensCustomerFk1740000000011,
     KycUploadPipeline1740000000012,
     AccountStatusTransitions1740000000013,
+    LeadsAccountLink1740000000014,
+    LeadVerification1740000000015,
   ],
   synchronize: false,
   logging: process.env.NODE_ENV === 'development',

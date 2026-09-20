@@ -6,6 +6,7 @@ import {
 export enum LeadStatus {
   DRAFT = 'draft',
   SUBMITTED = 'submitted',
+  NEEDS_REVIEW = 'needs_review',
   CONTACTED = 'contacted',
   CONVERTED = 'converted',
   REJECTED = 'rejected',
@@ -71,6 +72,24 @@ export class Lead {
 
   @Column({ name: 'submitted_at', type: 'timestamptz', nullable: true })
   submittedAt: Date | null;
+
+  @Column({ name: 'account_id', type: 'uuid', nullable: true })
+  accountId: string | null;
+
+  @Column({ name: 'verified_by', type: 'uuid', nullable: true })
+  verifiedBy: string | null;
+
+  @Column({ name: 'verified_at', type: 'timestamptz', nullable: true })
+  verifiedAt: Date | null;
+
+  @Column({ name: 'promoted_by', type: 'uuid', nullable: true })
+  promotedBy: string | null;
+
+  @Column({ name: 'promoted_at', type: 'timestamptz', nullable: true })
+  promotedAt: Date | null;
+
+  @Column({ name: 'internal_notes', type: 'text', nullable: true })
+  internalNotes: string | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
