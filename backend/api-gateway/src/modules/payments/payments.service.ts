@@ -16,6 +16,9 @@ import { Account } from '../../database/entities/account.entity';
 import { StubPaymentProvider } from './providers/stub.provider';
 import { PaymentProvider } from './providers/payment-provider.interface';
 import { IdempotencyService } from '../../common/idempotency/idempotency.service';
+import { SmsService } from '../sms/sms.service';
+import { SmsCategory } from '../../database/entities/sms-log.entity';
+import { Customer } from '../../database/entities/customer.entity';
 
 export interface InitiatePaymentResult {
   paymentId: string;
@@ -55,6 +58,9 @@ export class PaymentsService {
     private readonly configService: ConfigService,
     private readonly idempotency: IdempotencyService,
     private readonly stubProvider: StubPaymentProvider,
+    private readonly sms: SmsService,
+    @InjectRepository(Customer)
+    private readonly customerRepo: Repository<Customer>,
   ) {}
 
   private getProvider(name: string): PaymentProvider {
@@ -289,11 +295,38 @@ export class PaymentsService {
       `Payment ${payment.id} → ${payment.status} (invoice=${payment.invoiceId})`,
     );
 
+    if (payment.status === PaymentStatus.CONFIRMED) {
+      await this.sendPaymentConfirmation(payment);
+    }
+
     return {
       paymentId: payment.id,
       status: payment.status,
       duplicate: false,
     };
+  }
+
+  private async sendPaymentConfirmation(payment: Payment): Promise<void> {
+    try {
+      const invoice = await this.invoiceRepo.findOne({ where: { id: payment.invoiceId } });
+      if (!invoice) return;
+
+      const account = await this.accountRepo.findOne({ where: { id: invoice.accountId } });
+      if (!account) return;
+
+      const customer = await this.customerRepo.findOne({ where: { id: account.customerId } });
+      if (!customer) return;
+
+      await this.sms.dispatch(
+        customer.phone,
+        `PowerLink: Payment received — Rs. ${Number(payment.amount).toLocaleString('en-NP')} for invoice ${invoice.invoiceNumber}. Your connection has been renewed.`,
+        SmsCategory.PAYMENT,
+      );
+    } catch (err) {
+      this.logger.warn(
+        `Payment confirmation SMS failed for payment ${payment.id}: ${(err as Error).message}`,
+      );
+    }
   }
 
   // ------------------------------------------------------------------

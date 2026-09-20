@@ -10,6 +10,8 @@ import { Customer, KycStatus as CustomerKycStatus } from '../../database/entitie
 import { Account, AccountStatus, AccountType } from '../../database/entities/account.entity';
 import { DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
+import { SmsService } from '../sms/sms.service';
+import { SmsCategory } from '../../database/entities/sms-log.entity';
 import { CreateLeadDraftDto } from './dto/create-draft.dto';
 import { UpdateLeadDraftDto } from './dto/update-draft.dto';
 
@@ -44,6 +46,7 @@ export class LeadsService {
     private readonly leadRepo: Repository<Lead>,
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
+    private readonly sms: SmsService,
   ) {}
 
   async createDraft(dto: CreateLeadDraftDto): Promise<LeadDraftResponse> {
@@ -131,6 +134,9 @@ export class LeadsService {
       this.logger.log(
         `Lead submitted (pending manual promotion): ${lead.id} ref=${referenceId}`,
       );
+
+      await this.sendLeadConfirmation(lead.phone!, referenceId);
+
       return this.toResponse(lead);
     }
 
@@ -207,7 +213,25 @@ export class LeadsService {
     this.logger.log(
       `Lead submitted: ${lead.id} ref=${referenceId} account=${accountId}`,
     );
+
+    await this.sendLeadConfirmation(lead.phone!, referenceId);
+
     return this.toResponse(lead);
+  }
+
+  private async sendLeadConfirmation(phone: string, referenceId: string): Promise<void> {
+    try {
+      await this.sms.dispatch(
+        phone,
+        `PowerLink: Your connection request has been received. Reference ${referenceId}. We'll contact you within 24 hours.`,
+        SmsCategory.LEAD,
+      );
+    } catch (err) {
+      // Never let SMS failure fail the lead submission
+      this.logger.warn(
+        `Lead confirmation SMS failed for ${phone}: ${(err as Error).message}`,
+      );
+    }
   }
 
   /**
