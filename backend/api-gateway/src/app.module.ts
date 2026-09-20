@@ -27,12 +27,13 @@ import paymentConfig from './config/payment.config';
 import storageConfig from './config/storage.config';
 import kycConfig from './config/kyc.config';
 import leadsConfig from './config/leads.config';
+import smsConfig from './config/sms.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, dbConfig, redisConfig, paymentConfig, storageConfig, kycConfig, leadsConfig],
+      load: [appConfig, dbConfig, redisConfig, paymentConfig, storageConfig, kycConfig, leadsConfig, smsConfig],
       envFilePath: ['.env', '../../.env'],
     }),
 
