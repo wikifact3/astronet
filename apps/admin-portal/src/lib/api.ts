@@ -247,6 +247,58 @@ export interface AdminLead {
   internalNotes: string | null;
 }
 
+export type TicketStatus =
+  | 'open'
+  | 'assigned'
+  | 'field_tech_dispatched'
+  | 'pending_customer'
+  | 'resolved'
+  | 'reopened'
+  | 'closed';
+
+export type TicketCategory =
+  | 'connectivity'
+  | 'billing'
+  | 'hardware'
+  | 'installation'
+  | 'general';
+
+export interface AdminTicketSummary {
+  id: string;
+  ticketNumber: string;
+  subject: string;
+  category: TicketCategory;
+  status: TicketStatus;
+  priority: string;
+  customerName: string;
+  customerPhone: string;
+  assignedToId: string | null;
+  assignedToName: string | null;
+  ward: string | null;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt: string | null;
+}
+
+export interface AdminTicketDetail extends AdminTicketSummary {
+  description: string;
+  messages: Array<{
+    id: string;
+    authorType: 'customer' | 'staff' | 'system';
+    authorName: string;
+    message: string;
+    isInternal: boolean;
+    createdAt: string;
+  }>;
+}
+
+export interface AssignableStaff {
+  id: string;
+  fullName: string;
+  email: string;
+  role: string;
+}
+
 export const api = {
   adminAuth: {
     login: (email: string, password: string) =>
@@ -260,6 +312,36 @@ export const api = {
       request<{ ok: boolean }>('/admin/auth/logout', {
         method: 'POST',
         skipAuth: true,
+      }),
+  },
+  adminTickets: {
+    list: (params?: { status?: TicketStatus; category?: TicketCategory; assignedTo?: string; search?: string; limit?: number }) => {
+      const qs = new URLSearchParams();
+      if (params?.status) qs.set('status', params.status);
+      if (params?.category) qs.set('category', params.category);
+      if (params?.assignedTo) qs.set('assignedTo', params.assignedTo);
+      if (params?.search) qs.set('search', params.search);
+      if (params?.limit) qs.set('limit', String(params.limit));
+      const suffix = qs.toString() ? `?${qs}` : '';
+      return request<{ tickets: AdminTicketSummary[]; total: number }>(`/admin/tickets${suffix}`);
+    },
+    assignableStaff: () =>
+      request<{ staff: AssignableStaff[] }>('/admin/tickets/assignable-staff'),
+    get: (id: string) => request<AdminTicketDetail>(`/admin/tickets/${id}`),
+    assign: (id: string, staffId: string, note?: string) =>
+      request<AdminTicketDetail>(`/admin/tickets/${id}/assign`, {
+        method: 'POST',
+        body: JSON.stringify({ staffId, note }),
+      }),
+    updateStatus: (id: string, status: TicketStatus, note?: string) =>
+      request<AdminTicketDetail>(`/admin/tickets/${id}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ status, note }),
+      }),
+    reply: (id: string, message: string, isInternal = false) =>
+      request<AdminTicketDetail>(`/admin/tickets/${id}/reply`, {
+        method: 'POST',
+        body: JSON.stringify({ message, isInternal }),
       }),
   },
   adminLeads: {

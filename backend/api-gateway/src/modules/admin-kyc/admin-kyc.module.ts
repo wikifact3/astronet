@@ -7,6 +7,7 @@ import { AdminKycService } from './admin-kyc.service';
 import { KycDocument } from '../../database/entities/kyc-document.entity';
 import { Customer } from '../../database/entities/customer.entity';
 import { Account } from '../../database/entities/account.entity';
+import { SmsModule } from '../sms/sms.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { Account } from '../../database/entities/account.entity';
         secret: configService.get<string>('app.jwt.secret'),
       }),
     }),
+    SmsModule,
   ],
   controllers: [AdminKycController],
   providers: [AdminKycService],

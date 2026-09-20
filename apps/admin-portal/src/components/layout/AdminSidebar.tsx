@@ -7,8 +7,8 @@ const ITEMS = [
   { href: '/admin/leads', label: 'Leads' },
   { href: '/admin/accounts', label: 'CRM' },
   { href: '/admin/kyc', label: 'KYC review' },
+  { href: '/admin/tickets', label: 'Tickets' },
   // Future sections render as disabled placeholders
-  { href: '#', label: 'Tickets', disabled: true },
   { href: '#', label: 'Billing', disabled: true },
   { href: '#', label: 'NOC', disabled: true },
 ];

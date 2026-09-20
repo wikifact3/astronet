@@ -12,6 +12,8 @@ import {
 import { Customer } from '../../database/entities/customer.entity';
 import { Account } from '../../database/entities/account.entity';
 import { S3Service } from '../storage/s3.service';
+import { SmsService } from '../sms/sms.service';
+import { SmsCategory } from '../../database/entities/sms-log.entity';
 import { KycReviewAction, ReviewKycDto } from './dto/review-kyc.dto';
 
 export interface KycQueueItem {
@@ -57,6 +59,7 @@ export class AdminKycService {
     private readonly s3: S3Service,
     private readonly configService: ConfigService,
     private readonly jwt: JwtService,
+    private readonly sms: SmsService,
   ) {}
 
   async list(status?: KycStatus): Promise<KycQueueItem[]> {
