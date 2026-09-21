@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/auth.types';
@@ -12,5 +12,13 @@ export class SubscriptionsController {
   @Get('current')
   async current(@CurrentUser() user: AuthenticatedUser) {
     return this.subscriptionsService.getCurrentForCustomer(user.id);
+  }
+
+  @Post(':id/grace')
+  async useGrace(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.subscriptionsService.useGracePeriod(user.id, id);
   }
 }

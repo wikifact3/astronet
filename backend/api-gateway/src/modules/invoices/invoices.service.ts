@@ -9,6 +9,11 @@ import { Subscription } from '../../database/entities/subscription.entity';
 import { Plan } from '../../database/entities/plan.entity';
 import { Account } from '../../database/entities/account.entity';
 
+export interface GenerateInvoiceResult {
+  invoice: InvoiceResponse;
+  created: boolean;
+}
+
 export interface InvoiceResponse {
   id: string;
   invoiceNumber: string;
@@ -67,7 +72,9 @@ export class InvoicesService {
     return this.toResponse(invoice);
   }
 
-  async generateCurrentForCustomer(customerId: string): Promise<InvoiceResponse> {
+  async generateCurrentForCustomer(
+    customerId: string,
+  ): Promise<GenerateInvoiceResult> {
     const accounts = await this.accountRepo.find({ where: { customerId } });
     if (accounts.length === 0) {
       throw new NotFoundException('No account found');
@@ -90,7 +97,7 @@ export class InvoicesService {
       },
       order: { issuedAt: 'DESC' },
     });
-    if (existing) return this.toResponse(existing);
+    if (existing) return { invoice: await this.toResponse(existing), created: false };
 
     const plan = await this.planRepo.findOne({ where: { id: subscription.planId } });
     if (!plan) throw new NotFoundException('Plan not found');
@@ -123,7 +130,7 @@ export class InvoicesService {
     try {
       const saved = await this.invoiceRepo.save(invoice);
       this.logger.log(`Invoice generated: ${saved.invoiceNumber} for subscription ${subscription.id}`);
-      return this.toResponse(saved);
+      return { invoice: await this.toResponse(saved), created: true };
     } catch (err) {
       // Race: another request created the issued invoice first.
       // Unique index uniq_issued_invoice_per_subscription caught it — re-fetch.
@@ -133,7 +140,7 @@ export class InvoicesService {
           where: { subscriptionId: subscription.id, status: InvoiceStatus.ISSUED },
           order: { issuedAt: 'DESC' },
         });
-        if (concurrent) return this.toResponse(concurrent);
+        if (concurrent) return { invoice: await this.toResponse(concurrent), created: false };
       }
       throw err;
     }

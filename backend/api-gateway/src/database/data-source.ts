@@ -20,6 +20,7 @@ import { KycDocument } from './entities/kyc-document.entity';
 import { KycUploadSession } from './entities/kyc-upload-session.entity';
 import { OtpCode } from './entities/otp-code.entity';
 import { SmsLog } from './entities/sms-log.entity';
+import { CancellationRequest } from './entities/cancellation-request.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { OtpRequestLog } from './entities/otp-request-log.entity';
 import { IdempotencyKey } from '../common/idempotency/idempotency.entity';
@@ -40,6 +41,7 @@ import { AccountStatusTransitions1740000000013 } from './migrations/174000000001
 import { LeadsAccountLink1740000000014 } from './migrations/1740000000014-LeadsAccountLink';
 import { LeadVerification1740000000015 } from './migrations/1740000000015-LeadVerification';
 import { SmsLogs1740000000016 } from './migrations/1740000000016-SmsLogs';
+import { CancellationRequests1740000000017 } from './migrations/1740000000017-CancellationRequests';
 
 config();
 
@@ -53,7 +55,8 @@ const AppDataSource = new DataSource({
   entities: [
     Customer, Account, Plan, Subscription, Invoice, Payment,
     Ticket, TicketMessage, StaffUser, Role, Permission, Device, AuditLog,  
-    CoverageGeoData, Notification, Lead, KycDocument, KycUploadSession, OtpCode, RefreshToken, OtpRequestLog, IdempotencyKey, SmsLog
+    CoverageGeoData, Notification, Lead, KycDocument, KycUploadSession, OtpCode, RefreshToken,
+     OtpRequestLog, IdempotencyKey, SmsLog, CancellationRequest,
   ],
   migrations: [
     InitialSchema1740000000000,
@@ -73,6 +76,7 @@ const AppDataSource = new DataSource({
     LeadsAccountLink1740000000014,
     LeadVerification1740000000015,
     SmsLogs1740000000016,
+    CancellationRequests1740000000017,
   ],
   synchronize: false,
   logging: process.env.NODE_ENV === 'development',

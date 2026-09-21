@@ -32,7 +32,10 @@ export class InvoicesController {
   @Post('generate-current')
   @HttpCode(HttpStatus.OK)
   async generateCurrent(@CurrentUser() user: AuthenticatedUser) {
-    return this.invoicesService.generateCurrentForCustomer(user.id);
+    const result = await this.invoicesService.generateCurrentForCustomer(user.id);
+    // Customer portal wants just the invoice; the created flag is for
+    // internal callers (scheduler, admin).
+    return result.invoice;
   }
 
   @Get(':id')

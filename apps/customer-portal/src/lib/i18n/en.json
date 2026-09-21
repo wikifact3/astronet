@@ -57,7 +57,10 @@
     "autoRenewOff": "Auto-renew is off",
     "invoicesLink": "View invoices",
     "supportLink": "Support",
-    "kycLink": "Documents"
+    "kycLink": "Documents",
+    "graceUseButton": "Use Promise to Pay (+2 days)",
+    "graceApplying": "Applying…",
+    "cancelLink": "Cancellation"
   },
   "renew": {
     "title": "Renew your plan",
@@ -225,5 +228,17 @@
       "other": "Other"
     },
     "stillScanning": "Still scanning. This page will update automatically."
+  },
+  "cancel": {
+    "back": "Back to dashboard",
+    "title": "Request cancellation",
+    "subtitle": "Let us know you want to disconnect. Our team will review and contact you.",
+    "notice": "Your service will remain active while the request is being reviewed. You can withdraw the request any time before it is approved.",
+    "reasonLabel": "Why do you want to cancel?",
+    "reasonPlaceholder": "Tell us so we can try to help or improve.",
+    "submit": "Submit cancellation request",
+    "submitting": "Submitting…",
+    "withdraw": "Withdraw request",
+    "reviewNotes": "Reviewer notes"
   }
 }

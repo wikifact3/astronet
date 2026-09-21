@@ -1,14 +1,35 @@
-import type { CurrentSubscription } from '@/lib/api';
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { api, ApiError, type CurrentSubscription } from '@/lib/api';
 import { t, type Dict } from '@/lib/i18n';
 
-export function GraceCard({
-  dict,
-  sub,
-}: {
+interface Props {
   dict: Dict;
   sub: CurrentSubscription;
-}) {
+  onRefresh: () => void;
+}
+
+export function GraceCard({ dict, sub, onRefresh }: Props) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { usedThisYear, maxPerYear, remaining } = sub.gracePeriod;
+  const canUse = remaining > 0;
+
+  async function useGrace() {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.subscriptions.useGrace(sub.id);
+      onRefresh();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to apply');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="card p-6">
@@ -41,6 +62,25 @@ export function GraceCard({
       <p className="mt-3 text-xs text-gray-600">
         {t(dict, 'dashboard.graceExplanation')}
       </p>
+
+      {error && (
+        <div className="mt-3 rounded border border-red-200 bg-red-50 p-2 text-xs text-red-700">
+          {error}
+        </div>
+      )}
+
+      {canUse && (
+        <button
+          type="button"
+          onClick={useGrace}
+          disabled={busy}
+          className="btn btn-outline mt-4 w-full text-xs"
+        >
+          {busy
+            ? t(dict, 'dashboard.graceApplying')
+            : t(dict, 'dashboard.graceUseButton')}
+        </button>
+      )}
     </div>
   );
 }

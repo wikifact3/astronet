@@ -302,6 +302,17 @@ export interface KycSession {
   expiresAt: string;
 }
 
+export type CancellationStatus = 'pending' | 'approved' | 'rejected' | 'withdrawn';
+
+export interface CancellationRequest {
+  id: string;
+  status: CancellationStatus;
+  reason: string;
+  createdAt: string;
+  reviewedAt: string | null;
+  reviewNotes: string | null;
+}
+
 export const api = {
   auth: {
     requestOtp: (phone: string) =>
@@ -326,8 +337,26 @@ export const api = {
   me: {
     get: () => request<MeResponse>('/me'),
   },
+  cancellations: {
+    list: () => request<{ requests: CancellationRequest[] }>('/cancellations'),
+    create: (reason: string) =>
+      request<CancellationRequest>('/cancellations', {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      }),
+    withdraw: (id: string) =>
+      request<CancellationRequest>(`/cancellations/${id}/withdraw`, {
+        method: 'POST',
+      }),
+  },
   subscriptions: {
     current: () => request<CurrentSubscription>('/subscriptions/current'),
+    useGrace: (id: string) =>
+      request<{
+        newValidityEnd: string;
+        gracePeriodUsedThisYear: number;
+        remaining: number;
+      }>(`/subscriptions/${id}/grace`, { method: 'POST' }),
   },
   invoices: {
     list: () => request<{ invoices: InvoiceResponse[] }>('/invoices'),

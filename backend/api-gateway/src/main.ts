@@ -32,7 +32,6 @@ async function bootstrap() {
   app.use(cookieParser());
 
   const allowed = [
-    ...configService.get<string>('CORS_ORIGINS', '').split(',').filter(Boolean),
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3002',

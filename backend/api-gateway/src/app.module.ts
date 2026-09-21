@@ -18,6 +18,7 @@ import { AdminKycModule } from './modules/admin-kyc/admin-kyc.module';
 import { AdminCrmModule } from './modules/admin-crm/admin-crm.module';
 import { AdminLeadsModule } from './modules/admin-leads/admin-leads.module';
 import { AdminTicketsModule } from './modules/admin-tickets/admin-tickets.module';
+import { CancellationsModule } from './modules/cancellations/cancellations.module';
 import { LoggingModule } from './modules/logging/logging.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import loggingConfig from './modules/logging/logging.config';
@@ -92,6 +93,7 @@ import smsConfig from './config/sms.config';
     AdminCrmModule,
     AdminLeadsModule,
     AdminTicketsModule,
+    CancellationsModule,
     LoggingModule,
     MetricsModule,
     StorageModule,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState,useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api, ApiError, type CurrentSubscription, type MeResponse } from '@/lib/api';
@@ -76,6 +76,26 @@ export function DashboardView({ locale, dict }: Props) {
   const account = me?.accounts[0] ?? null;
   const greetingName = user.fullName || user.phone;
 
+const load = useCallback(async () => {
+  setLoading(true);
+  setError(null);
+  try {
+    const [meRes, subRes] = await Promise.all([
+      api.me.get(),
+      api.subscriptions.current(),
+    ]);
+    setMe(meRes);
+    setSub(subRes);
+  } catch (err) {
+    setError(err instanceof ApiError ? err.message : t(dict, 'common.error'));
+  } finally {
+    setLoading(false);
+  }
+}, [dict]);
+
+useEffect(() => {
+  if (ready && user) void load();
+}, [ready, user, load]);
   return (
     <section className="container-page py-10">
       <div className="flex items-start justify-between gap-4">
@@ -106,6 +126,12 @@ export function DashboardView({ locale, dict }: Props) {
           >
             {t(dict, 'dashboard.kycLink')}
           </Link>
+          <Link
+            href={`/${locale}/cancel`}
+            className="btn btn-outline text-xs whitespace-nowrap"
+          >
+            {t(dict, 'dashboard.cancelLink')}
+          </Link>
         </div>
       </div>
 
@@ -126,7 +152,7 @@ export function DashboardView({ locale, dict }: Props) {
           </div>
           <div className="space-y-6">
             <PlanSummary dict={dict} sub={sub} />
-            <GraceCard dict={dict} sub={sub} />
+            <GraceCard dict={dict} sub={sub} onRefresh={() => { void load(); }} />
           </div>
         </div>
       )}
