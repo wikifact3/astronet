@@ -19,6 +19,7 @@ import {
 } from '../../../database/entities/kyc-document.entity';
 import { Account } from '../../../database/entities/account.entity';
 import { S3Service } from '../../storage/s3.service';
+import { MetricsService } from '../../metrics/metrics.service';
 import { CreateKycSessionDto } from './dto/create-session.dto';
 
 export interface SessionResponse {
@@ -54,6 +55,7 @@ export class KycUploadService {
     private readonly s3: S3Service,
     private readonly configService: ConfigService,
     @InjectQueue('kyc') private readonly kycQueue: Queue,
+    private readonly metrics: MetricsService,
   ) {}
 
   async createSession(
@@ -194,6 +196,7 @@ export class KycUploadService {
     session.status = KycUploadSessionStatus.COMPLETED;
     await this.sessionRepo.save(session);
 
+    this.metrics.kycUploadsTotal.inc({ outcome: 'accepted' });
     this.logger.log(
       `KYC uploaded: doc=${doc.id} account=${session.accountId} type=${sniffed.mime} size=${file.size} sha256=${checksum.slice(0, 12)}…`,
     );

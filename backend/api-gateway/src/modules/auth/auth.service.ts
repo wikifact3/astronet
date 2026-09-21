@@ -11,6 +11,7 @@ import { Customer } from '../../database/entities/customer.entity';
 import { RefreshToken } from '../../database/entities/refresh-token.entity';
 import { SmsService } from '../sms/sms.service';
 import { OtpRateLimitService } from './otp-rate-limit.service';
+import { MetricsService } from '../metrics/metrics.service';
 import { OtpRequestOutcome } from '../../database/entities/otp-request-log.entity';
 import { JwtPayload, RefreshPayload } from './auth.types';
 
@@ -63,6 +64,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly sms: SmsService,
     private readonly rateLimit: OtpRateLimitService,
+    private readonly metrics: MetricsService,
   ) {}
 
   // ------------------------------------------------------------------
@@ -89,6 +91,7 @@ export class AuthService {
         { phone, ip: ctx.ip },
         OtpRequestOutcome.NOT_REGISTERED,
       );
+      this.metrics.otpRequestsTotal.inc({ outcome: 'not_registered' });
       const applyUrl = this.configService.get<string>('app.marketingApplyUrl');
       return {
         status: 'not_registered',
@@ -131,6 +134,7 @@ export class AuthService {
     }
 
     await this.rateLimit.record({ phone, ip: ctx.ip }, OtpRequestOutcome.SENT);
+    this.metrics.otpRequestsTotal.inc({ outcome: 'sent' });
 
     return { status: 'sent', expiresIn: cfg.expiresInSeconds };
   }

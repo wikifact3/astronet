@@ -9,6 +9,7 @@ import {
   TicketStatus,
 } from '../../database/entities/ticket.entity';
 import { TicketMessage, TicketMessageAuthorType } from '../../database/entities/ticket-message.entity';
+import { MetricsService } from '../metrics/metrics.service';
 import { Account } from '../../database/entities/account.entity';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { AddTicketMessageDto } from './dto/add-message.dto';
@@ -53,6 +54,7 @@ export class TicketsService {
     @InjectRepository(Account)
     private readonly accountRepo: Repository<Account>,
     private readonly dataSource: DataSource,
+    private readonly metrics: MetricsService,
   ) {}
 
   async list(
@@ -131,6 +133,7 @@ export class TicketsService {
       return saved;
     });
 
+    this.metrics.ticketsCreatedTotal.inc({ category: ticket.category });
     this.logger.log(
       `Ticket created: id=${ticket.id} category=${ticket.category} account=${account.id}`,
     );

@@ -18,6 +18,9 @@ import { AdminKycModule } from './modules/admin-kyc/admin-kyc.module';
 import { AdminCrmModule } from './modules/admin-crm/admin-crm.module';
 import { AdminLeadsModule } from './modules/admin-leads/admin-leads.module';
 import { AdminTicketsModule } from './modules/admin-tickets/admin-tickets.module';
+import { LoggingModule } from './modules/logging/logging.module';
+import { MetricsModule } from './modules/metrics/metrics.module';
+import loggingConfig from './modules/logging/logging.config';
 import { StorageModule } from './modules/storage/storage.module';
 import { KycUploadModule } from './modules/kyc/kyc-upload/kyc-upload.module';
 import { KycScanProcessorModule } from './modules/kyc/kyc-scan/kyc-scan.module';
@@ -34,7 +37,7 @@ import smsConfig from './config/sms.config';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, dbConfig, redisConfig, paymentConfig, storageConfig, kycConfig, leadsConfig, smsConfig],
+      load: [appConfig, dbConfig, redisConfig, paymentConfig, storageConfig, kycConfig, leadsConfig, smsConfig, loggingConfig],
       envFilePath: ['.env', '../../.env'],
     }),
 
@@ -89,6 +92,8 @@ import smsConfig from './config/sms.config';
     AdminCrmModule,
     AdminLeadsModule,
     AdminTicketsModule,
+    LoggingModule,
+    MetricsModule,
     StorageModule,
     KycUploadModule,
     KycScanProcessorModule,

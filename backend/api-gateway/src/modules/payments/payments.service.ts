@@ -17,6 +17,7 @@ import { StubPaymentProvider } from './providers/stub.provider';
 import { PaymentProvider } from './providers/payment-provider.interface';
 import { IdempotencyService } from '../../common/idempotency/idempotency.service';
 import { SmsService } from '../sms/sms.service';
+import { MetricsService } from '../metrics/metrics.service';
 import { SmsCategory } from '../../database/entities/sms-log.entity';
 import { Customer } from '../../database/entities/customer.entity';
 
@@ -61,6 +62,7 @@ export class PaymentsService {
     private readonly sms: SmsService,
     @InjectRepository(Customer)
     private readonly customerRepo: Repository<Customer>,
+    private readonly metrics: MetricsService,
   ) {}
 
   private getProvider(name: string): PaymentProvider {
@@ -141,6 +143,7 @@ export class PaymentsService {
       await this.idempotency.store('payment.initiate', idempotencyKey, result, 200);
     }
 
+    this.metrics.paymentsTotal.inc({ provider: providerName, status: 'initiated' });
     this.logger.log(
       `Payment initiated: id=${saved.id} invoice=${invoice.invoiceNumber} amount=${invoice.totalAmount} provider=${providerName}`,
     );
@@ -199,6 +202,7 @@ export class PaymentsService {
     const provider = this.getProvider(providerName);
     const event = await provider.verifyWebhook({ rawBody, signature, headers });
 
+    this.metrics.webhooksTotal.inc({ provider: providerName, outcome: event.status });
     this.logger.log(
       `Webhook ${providerName}: txn=${event.providerTxnId} status=${event.status}`,
     );
@@ -296,7 +300,10 @@ export class PaymentsService {
     );
 
     if (payment.status === PaymentStatus.CONFIRMED) {
+      this.metrics.paymentsTotal.inc({ provider: providerName, status: 'confirmed' });
       await this.sendPaymentConfirmation(payment);
+    } else if (payment.status === PaymentStatus.DECLINED) {
+      this.metrics.paymentsTotal.inc({ provider: providerName, status: 'declined' });
     }
 
     return {

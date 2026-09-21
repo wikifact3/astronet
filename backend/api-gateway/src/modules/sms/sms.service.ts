@@ -8,6 +8,7 @@ import {
 import { SmsProvider, SendSmsResult } from './providers/sms-provider.interface';
 import { SparrowSmsProvider } from './providers/sparrow.provider';
 import { DevLoggerSmsProvider } from './providers/dev-logger.provider';
+import { MetricsService } from '../metrics/metrics.service';
 
 export interface SmsSendOptions {
   category: SmsCategory;
@@ -25,6 +26,7 @@ export class SmsService {
     private readonly configService: ConfigService,
     private readonly sparrow: SparrowSmsProvider,
     devLogger: DevLoggerSmsProvider,
+    private readonly metrics: MetricsService,
   ) {
     const providerName = this.configService.get<string>('sms.provider', 'dev-logger');
     this.fallback = devLogger;
@@ -98,6 +100,12 @@ export class SmsService {
         error: result.error,
       },
     );
+
+    this.metrics.smsSentTotal.inc({
+      provider: this.provider.name,
+      category,
+      status: result.success ? 'sent' : 'failed',
+    });
 
     return result;
   }
