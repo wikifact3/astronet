@@ -20,6 +20,8 @@ import { AdminLeadsModule } from './modules/admin-leads/admin-leads.module';
 import { AdminTicketsModule } from './modules/admin-tickets/admin-tickets.module';
 import { CancellationsModule } from './modules/cancellations/cancellations.module';
 import { LoggingModule } from './modules/logging/logging.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { AdminBillingModule } from './modules/admin-billing/admin-billing.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import loggingConfig from './modules/logging/logging.config';
 import { StorageModule } from './modules/storage/storage.module';
@@ -95,6 +97,8 @@ import smsConfig from './config/sms.config';
     AdminTicketsModule,
     CancellationsModule,
     LoggingModule,
+    AuditModule,
+    AdminBillingModule,
     MetricsModule,
     StorageModule,
     KycUploadModule,

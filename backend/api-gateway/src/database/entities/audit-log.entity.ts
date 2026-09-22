@@ -6,29 +6,29 @@ import { BaseEntity } from './base.entity';
 @Index(['actorId', 'actorType'])
 @Index(['resourceType', 'resourceId'])
 export class AuditLog extends BaseEntity {
-  @Column({ name: 'actor_id' })
+  @Column({ name: 'actor_id', type: 'uuid' })
   actorId: string;
 
-  @Column({ name: 'actor_type', length: 20 })
+  @Column({ name: 'actor_type', type: 'varchar', length: 20 })
   actorType: string;
 
-  @Column({ length: 100 })
+  @Column({ type: 'varchar', length: 100 })
   action: string;
 
-  @Column({ name: 'resource_type', length: 50 })
+  @Column({ name: 'resource_type', type: 'varchar', length: 50 })
   resourceType: string;
 
-  @Column({ name: 'resource_id' })
+  @Column({ name: 'resource_id', type: 'uuid' })
   resourceId: string;
 
   @Column({ type: 'jsonb', nullable: true })
-  metadata: object;
+  metadata: object | null;
 
-  @Column({ name: 'ip_address', nullable: true })
-  ipAddress: string;
+  @Column({ name: 'ip_address', type: 'inet', nullable: true })
+  ipAddress: string | null;
 
   @Column({ name: 'user_agent', type: 'text', nullable: true })
-  userAgent: string;
+  userAgent: string | null;
 
   @Column({ type: 'timestamptz', default: () => 'NOW()' })
   timestamp: Date;

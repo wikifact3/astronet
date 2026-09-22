@@ -299,6 +299,52 @@ export interface AssignableStaff {
   role: string;
 }
 
+export type InvoiceStatus =
+  | 'draft'
+  | 'issued'
+  | 'paid'
+  | 'overdue'
+  | 'cancelled'
+  | 'credit_note';
+
+export interface AdminInvoiceRow {
+  id: string;
+  invoiceNumber: string;
+  accountId: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  amount: number;
+  vatAmount: number;
+  tscAmount: number;
+  totalAmount: number;
+  status: InvoiceStatus;
+  issuedAt: string;
+  dueDate: string;
+  paidAt: string | null;
+  isAdjustment: boolean;
+  originalInvoiceId: string | null;
+}
+
+export interface ReconciliationSummary {
+  period: { from: string | null; to: string | null };
+  counts: {
+    issued: number;
+    paid: number;
+    overdue: number;
+    cancelled: number;
+    creditNote: number;
+  };
+  amounts: {
+    outstanding: number;
+    collected: number;
+    credits: number;
+    overdue: number;
+  };
+}
+
+export type AdjustmentKind = 'charge' | 'credit' | 'refund';
+
 export const api = {
   adminAuth: {
     login: (email: string, password: string) =>
@@ -313,6 +359,31 @@ export const api = {
         method: 'POST',
         skipAuth: true,
       }),
+  },
+  adminBilling: {
+    listInvoices: (params?: { status?: InvoiceStatus; search?: string; fromDate?: string; toDate?: string; limit?: number }) => {
+      const qs = new URLSearchParams();
+      if (params?.status) qs.set('status', params.status);
+      if (params?.search) qs.set('search', params.search);
+      if (params?.fromDate) qs.set('fromDate', params.fromDate);
+      if (params?.toDate) qs.set('toDate', params.toDate);
+      if (params?.limit) qs.set('limit', String(params.limit));
+      const suffix = qs.toString() ? `?${qs}` : '';
+      return request<{ invoices: AdminInvoiceRow[]; total: number; summary: ReconciliationSummary }>(
+        `/admin/billing/invoices${suffix}`,
+      );
+    },
+    adjust: (body: {
+      accountId: string;
+      kind: AdjustmentKind;
+      amount: number;
+      reason: string;
+      originalInvoiceId?: string;
+    }) =>
+      request<{ invoiceId: string; invoiceNumber: string; kind: AdjustmentKind; amount: number; linkedTo: string | null }>(
+        '/admin/billing/adjustments',
+        { method: 'POST', body: JSON.stringify(body) },
+      ),
   },
   adminTickets: {
     list: (params?: { status?: TicketStatus; category?: TicketCategory; assignedTo?: string; search?: string; limit?: number }) => {

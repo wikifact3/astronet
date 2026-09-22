@@ -13,6 +13,7 @@ import { Customer } from '../../database/entities/customer.entity';
 import { Account } from '../../database/entities/account.entity';
 import { S3Service } from '../storage/s3.service';
 import { SmsService } from '../sms/sms.service';
+import { AuditService } from '../audit/audit.service';
 import { SmsCategory } from '../../database/entities/sms-log.entity';
 import { KycReviewAction, ReviewKycDto } from './dto/review-kyc.dto';
 
@@ -60,6 +61,7 @@ export class AdminKycService {
     private readonly configService: ConfigService,
     private readonly jwt: JwtService,
     private readonly sms: SmsService,
+    private readonly audit: AuditService,
   ) {}
 
   async list(status?: KycStatus): Promise<KycQueueItem[]> {
@@ -122,6 +124,17 @@ export class AdminKycService {
     doc.reviewedAt = new Date();
 
     await this.kycRepo.save(doc);
+    await this.audit.record({
+      actorId: staffId,
+      actorType: 'staff',
+      action: `kyc.${dto.action}`,
+      resourceType: 'kyc_document',
+      resourceId: doc.id,
+      metadata: {
+        reasonCode: dto.reasonCode,
+        notes: dto.notes ?? null,
+      },
+    });
     this.logger.log(
       `KYC ${doc.id} reviewed by ${staffId}: ${dto.action} (${dto.reasonCode})`,
     );

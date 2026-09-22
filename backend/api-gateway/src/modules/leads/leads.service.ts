@@ -11,6 +11,7 @@ import { Account, AccountStatus, AccountType } from '../../database/entities/acc
 import { DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { SmsService } from '../sms/sms.service';
+import { AuditService } from '../audit/audit.service';
 import { SmsCategory } from '../../database/entities/sms-log.entity';
 import { CreateLeadDraftDto } from './dto/create-draft.dto';
 import { UpdateLeadDraftDto } from './dto/update-draft.dto';
@@ -47,6 +48,7 @@ export class LeadsService {
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
     private readonly sms: SmsService,
+    private readonly audit: AuditService,
   ) {}
 
   async createDraft(dto: CreateLeadDraftDto): Promise<LeadDraftResponse> {
@@ -305,6 +307,14 @@ export class LeadsService {
       return saved.id;
     });
 
+    await this.audit.record({
+      actorId: staffId,
+      actorType: 'staff',
+      action: 'lead.promote',
+      resourceType: 'lead',
+      resourceId: leadId,
+      metadata: { accountId },
+    });
     this.logger.log(
       `Lead ${leadId} manually promoted to account ${accountId} by staff=${staffId}`,
     );
@@ -335,6 +345,14 @@ export class LeadsService {
     }
     await this.leadRepo.save(lead);
 
+    await this.audit.record({
+      actorId: staffId,
+      actorType: 'staff',
+      action: 'lead.verify',
+      resourceType: 'lead',
+      resourceId: leadId,
+      metadata: { notes: notes ?? null },
+    });
     this.logger.log(`Lead ${leadId} verified by staff=${staffId}`);
     return this.toResponse(lead);
   }

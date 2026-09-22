@@ -12,6 +12,7 @@ import { Customer } from '../../database/entities/customer.entity';
 import { StaffUser } from '../../database/entities/staff-user.entity';
 import { Role } from '../../database/entities/role.entity';
 import { SmsService } from '../sms/sms.service';
+import { AuditService } from '../audit/audit.service';
 import { SmsCategory } from '../../database/entities/sms-log.entity';
 import { ListAdminTicketsQueryDto } from './dto/list-tickets.dto';
 import { AssignTicketDto } from './dto/assign-ticket.dto';
@@ -65,6 +66,7 @@ export class AdminTicketsService {
     @InjectRepository(Role)
     private readonly roleRepo: Repository<Role>,
     private readonly sms: SmsService,
+    private readonly audit: AuditService,
   ) {}
 
   async list(
@@ -222,6 +224,14 @@ export class AdminTicketsService {
       );
     }
 
+    await this.audit.record({
+      actorId: staffId,
+      actorType: 'staff',
+      action: 'ticket.status_change',
+      resourceType: 'ticket',
+      resourceId: ticket.id,
+      metadata: { from: previousStatus, to: dto.status, note: dto.note ?? null },
+    });
     this.logger.log(
       `Ticket ${ticket.id} ${previousStatus} → ${dto.status} by staff=${staffId}`,
     );
