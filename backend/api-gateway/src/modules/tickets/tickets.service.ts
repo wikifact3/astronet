@@ -106,6 +106,14 @@ export class TicketsService {
   ): Promise<TicketDetail> {
     const account = await this.pickPrimaryAccount(customerId);
 
+    // Inherit the ward from the account's installation address so the
+    // NOC dispatch board can group tickets by ward without asking the
+    // customer again.
+    const installationAddress = account.installationAddress as
+      | { ward?: string }
+      | null;
+    const ward = installationAddress?.ward ?? null;
+
     const ticket = await this.dataSource.transaction(async (manager) => {
       const created = manager.create(Ticket, {
         accountId: account.id,
@@ -115,7 +123,7 @@ export class TicketsService {
         subject: dto.subject,
         description: dto.description,
         reopenedCount: 0,
-        ward: null,
+        ward,
       });
       const saved = await manager.save(created);
 
