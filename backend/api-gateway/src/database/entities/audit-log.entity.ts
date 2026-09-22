@@ -18,8 +18,8 @@ export class AuditLog extends BaseEntity {
   @Column({ name: 'resource_type', type: 'varchar', length: 50 })
   resourceType: string;
 
-  @Column({ name: 'resource_id', type: 'uuid' })
-  resourceId: string;
+  @Column({ name: 'resource_id', type: 'uuid', nullable: true })
+  resourceId: string | null;
 
   @Column({ type: 'jsonb', nullable: true })
   metadata: object | null;

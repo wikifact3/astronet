@@ -43,6 +43,7 @@ import { LeadVerification1740000000015 } from './migrations/1740000000015-LeadVe
 import { SmsLogs1740000000016 } from './migrations/1740000000016-SmsLogs';
 import { CancellationRequests1740000000017 } from './migrations/1740000000017-CancellationRequests';
 import { IssuedUniqueExcludesAdjustments1740000000018 } from './migrations/1740000000018-IssuedUniqueExcludesAdjustments';
+import { AuditResourceIdNullable1740000000019 } from './migrations/1740000000019-AuditResourceIdNullable';
 
 config();
 
@@ -79,6 +80,7 @@ const AppDataSource = new DataSource({
     SmsLogs1740000000016,
     CancellationRequests1740000000017,
     IssuedUniqueExcludesAdjustments1740000000018,
+    AuditResourceIdNullable1740000000019,
   ],
   synchronize: false,
   logging: process.env.NODE_ENV === 'development',

@@ -13,15 +13,16 @@ import { SmsModule } from './modules/sms/sms.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
 import { PaymentsModule } from './modules/payments/payments.module'; 
 import { TicketsModule } from './modules/tickets/tickets.module';
-import { AdminAuthModule } from './modules/admin-auth/admin-auth.module';
-import { AdminKycModule } from './modules/admin-kyc/admin-kyc.module';
-import { AdminCrmModule } from './modules/admin-crm/admin-crm.module';
-import { AdminLeadsModule } from './modules/admin-leads/admin-leads.module';
-import { AdminTicketsModule } from './modules/admin-tickets/admin-tickets.module';
+import { AdminAuthModule } from './modules/admin/admin-auth/admin-auth.module';
+import { AdminKycModule } from './modules/admin/admin-kyc/admin-kyc.module';
+import { AdminCrmModule } from './modules/admin/admin-crm/admin-crm.module';
+import { AdminLeadsModule } from './modules/admin/admin-leads/admin-leads.module';
+import { AdminTicketsModule } from './modules/admin/admin-tickets/admin-tickets.module';
 import { CancellationsModule } from './modules/cancellations/cancellations.module';
 import { LoggingModule } from './modules/logging/logging.module';
 import { AuditModule } from './modules/audit/audit.module';
-import { AdminBillingModule } from './modules/admin-billing/admin-billing.module';
+import { AdminBillingModule } from './modules/admin/admin-billing/admin-billing.module';
+import { NocModule } from './modules/admin/admin-noc/noc.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import loggingConfig from './modules/logging/logging.config';
 import { StorageModule } from './modules/storage/storage.module';
@@ -99,6 +100,7 @@ import smsConfig from './config/sms.config';
     LoggingModule,
     AuditModule,
     AdminBillingModule,
+    NocModule,
     MetricsModule,
     StorageModule,
     KycUploadModule,

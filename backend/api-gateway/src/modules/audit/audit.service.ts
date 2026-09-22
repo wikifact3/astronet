@@ -8,7 +8,7 @@ export interface AuditEntry {
   actorType: 'staff' | 'customer' | 'system';
   action: string;
   resourceType: string;
-  resourceId: string;
+  resourceId: string | null;
   metadata?: Record<string, unknown>;
   ipAddress?: string;
   userAgent?: string;

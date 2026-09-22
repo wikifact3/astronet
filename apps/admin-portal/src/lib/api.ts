@@ -345,6 +345,39 @@ export interface ReconciliationSummary {
 
 export type AdjustmentKind = 'charge' | 'credit' | 'refund';
 
+export interface NocTicket {
+  id: string;
+  ticketNumber: string;
+  subject: string;
+  category: string;
+  status: TicketStatus;
+  priority: string;
+  customerName: string;
+  customerPhone: string;
+  assignedToName: string | null;
+  createdAt: string;
+  ageHours: number;
+}
+
+export interface WardGroup {
+  ward: string;
+  openCount: number;
+  urgentCount: number;
+  tickets: NocTicket[];
+}
+
+export interface TechnicianLoad {
+  id: string;
+  fullName: string;
+  email: string;
+  role: string;
+  wardAccess: string[] | null;
+  openTickets: number;
+  assignedToday: number;
+}
+
+export type BroadcastCategory = 'maintenance' | 'outage' | 'promotion' | 'general';
+
 export const api = {
   adminAuth: {
     login: (email: string, password: string) =>
@@ -359,6 +392,16 @@ export const api = {
         method: 'POST',
         skipAuth: true,
       }),
+  },
+  adminNoc: {
+    wardView: () => request<{ groups: WardGroup[] }>('/admin/noc/ward-view'),
+    technicians: () =>
+      request<{ technicians: TechnicianLoad[] }>('/admin/noc/technicians'),
+    broadcast: (body: { wards?: string[]; message: string; category: BroadcastCategory }) =>
+      request<{ jobId: string; recipients: number; wards: string[]; category: BroadcastCategory }>(
+        '/admin/noc/broadcast',
+        { method: 'POST', body: JSON.stringify(body) },
+      ),
   },
   adminBilling: {
     listInvoices: (params?: { status?: InvoiceStatus; search?: string; fromDate?: string; toDate?: string; limit?: number }) => {
