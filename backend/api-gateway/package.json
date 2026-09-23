@@ -18,7 +18,11 @@
     "db:migrate:revert": "typeorm-ts-node-commonjs migration:revert -d src/database/data-source.ts",
     "db:migrate:show": "typeorm-ts-node-commonjs migration:show -d src/database/data-source.ts",
     "test:auth": "jest test/auth",
-    "test:payments": "jest test/payments"
+    "test:payments": "jest test/payments",
+    "test:tickets": "jest test/tickets",
+    "test:kyc": "jest test/kyc",
+    "test:leads": "jest test/leads",
+    "test:billing": "jest test/billing"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1134.0",

@@ -1,8 +1,10 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isLocale, type Locale } from '@/lib/i18n/config';
 import { getDict, t } from '@/lib/i18n';
-import { api, formatNPR } from '@/lib/api';
+import { api } from '@/lib/api';
+import { PlanCard } from '@/components/plans/PlanCard';
+import { FadeIn } from '@/components/shared/FadeIn';
+import { SectionHeading } from '@/components/shared/SectionHeading';
 
 export const revalidate = 300;
 
@@ -19,57 +21,51 @@ export default async function PlansPage({
 
   return (
     <section className="container-page py-16">
-      <div className="mx-auto max-w-2xl text-center">
-        <h1 className="text-3xl font-bold text-gray-900">{t(dict, 'plans.title')}</h1>
-        <p className="mt-3 text-gray-600">{t(dict, 'plans.subtitle')}</p>
-      </div>
+      <SectionHeading
+        eyebrow="Plans"
+        title={t(dict, 'plans.title')}
+        subtitle={t(dict, 'plans.subtitle')}
+      />
 
-      <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {plans.map((plan) => (
-          <div key={plan.id} className="card flex flex-col p-6">
-            <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
+      {plans.length === 0 ? (
+        <p className="mt-12 text-center text-gray-500">{t(dict, 'common.error')}</p>
+      ) : (
+        <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {plans.map((plan, i) => (
+            <FadeIn key={plan.id} delay={i * 60}>
+              <PlanCard
+                locale={locale}
+                dict={dict}
+                plan={plan}
+                featured={plan.speedMbps === 100}
+              />
+            </FadeIn>
+          ))}
+        </div>
+      )}
 
-            <p className="mt-3 text-3xl font-bold text-brand-700">
-              {plan.speedMbps}
-              <span className="ml-1 text-base font-normal text-gray-500">Mbps</span>
-            </p>
-
-            <dl className="mt-5 space-y-1.5 text-xs text-gray-600">
-              <div className="flex justify-between">
-                <dt>{t(dict, 'plans.basePrice')}</dt>
-                <dd>{formatNPR(plan.basePrice)}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt>{t(dict, 'plans.vat')}</dt>
-                <dd>{formatNPR(plan.vatAmount)}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt>{t(dict, 'plans.tsc')}</dt>
-                <dd>{formatNPR(plan.tscAmount)}</dd>
-              </div>
-            </dl>
-
-            <div className="mt-5 border-t border-gray-100 pt-5">
-              <p className="text-sm text-gray-500">{t(dict, 'plans.total')}</p>
-              <p className="text-2xl font-semibold text-gray-900">
-                {formatNPR(plan.totalPrice)}
-                <span className="text-sm font-normal text-gray-500">
-                  {t(dict, 'plans.perMonth')}
-                </span>
-              </p>
-            </div>
-
-            <div className="mt-6 flex-1" />
-
-            <Link
-              href={`/${locale}/connect?plan=${plan.id}`}
-              className="btn btn-primary w-full"
-            >
-              {t(dict, 'plans.orderNow')}
-            </Link>
-          </div>
-        ))}
+      <div className="mt-16 rounded-2xl border border-gray-200 bg-gray-50/60 p-8">
+        <h3 className="text-lg font-semibold text-gray-900">
+          What&apos;s included in every plan
+        </h3>
+        <div className="mt-6 grid gap-4 text-sm text-gray-700 sm:grid-cols-2 lg:grid-cols-4">
+          <IncludedItem label="Free standard installation" />
+          <IncludedItem label="24×7 local support" />
+          <IncludedItem label="Transparent VAT & TSC" />
+          <IncludedItem label="Cancel anytime" />
+        </div>
       </div>
     </section>
+  );
+}
+
+function IncludedItem({ label }: { label: string }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="mt-1 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-brand-600 text-[10px] text-white">
+        ✓
+      </span>
+      <span>{label}</span>
+    </div>
   );
 }
