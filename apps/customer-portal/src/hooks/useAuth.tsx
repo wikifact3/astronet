@@ -48,10 +48,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clear();
   }, [clear]);
 
-  // Wire 401 handler: any authenticated request that 401s logs us out
+  // Wire 401 handler: any authenticated request that 401s logs us out.
+  // We emit a window event rather than calling a toast directly, because
+  // ToastProvider wraps this component (not the other way around). The
+  // ToastProvider listens for this event and shows the notification.
   useEffect(() => {
     setUnauthorizedHandler(() => {
       clear();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('powerlink:session-expired'));
+      }
     });
     return () => setUnauthorizedHandler(null);
   }, [clear]);

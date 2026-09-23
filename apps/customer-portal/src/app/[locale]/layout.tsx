@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { isLocale, locales, type Locale } from '@/lib/i18n/config';
 import { getDict } from '@/lib/i18n';
 import { AuthProvider } from '@/hooks/useAuth';
+import { ToastProvider } from '@/components/toast/ToastProvider';
 import { Header } from '@/components/layout/Header';
 
 export function generateStaticParams() {
@@ -21,8 +22,10 @@ export default function LocaleLayout({
 
   return (
     <AuthProvider>
-      <Header locale={locale} dict={dict} />
-      <main>{children}</main>
+      <ToastProvider>
+        <Header locale={locale} dict={dict} />
+        <main>{children}</main>
+      </ToastProvider>
     </AuthProvider>
   );
 }

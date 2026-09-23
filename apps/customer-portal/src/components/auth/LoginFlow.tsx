@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { t, type Dict, type Locale } from '@/lib/i18n';
+import { useToast } from '@/components/toast/ToastProvider';
 
 const PHONE_RE = /^(98|97|96)\d{8}$/;
 const RESEND_SECONDS = 60;
@@ -22,6 +23,7 @@ type Step =
 export function LoginFlow({ locale, dict }: Props) {
   const router = useRouter();
   const { user, ready, login } = useAuth();
+  const toast = useToast();
 
   const [step, setStep] = useState<Step>({ name: 'phone' });
   const [phone, setPhone] = useState('');
@@ -79,6 +81,15 @@ export function LoginFlow({ locale, dict }: Props) {
     try {
       const result = await api.auth.verifyOtp(phone, otp);
       login(result);
+
+      const displayName = result.user.fullName?.split(' ')[0] || 'there';
+      toast.success(
+        `Welcome back, ${displayName}`,
+        result.isNewUser
+          ? 'Your account is ready. Explore your dashboard to get started.'
+          : 'You are signed in.',
+      );
+
       router.replace(`/${locale}/dashboard`);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : t(dict, 'common.error');

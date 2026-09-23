@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { api, ApiError, type CancellationRequest } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { t, type Dict, type Locale } from '@/lib/i18n';
+import { useToast } from '@/components/toast/ToastProvider';
 
 interface Props {
   locale: Locale;
@@ -15,6 +16,7 @@ interface Props {
 export function CancelView({ locale, dict }: Props) {
   const router = useRouter();
   const { user, ready } = useAuth();
+  const toast = useToast();
 
   const [requests, setRequests] = useState<CancellationRequest[] | null>(null);
   const [reason, setReason] = useState('');
@@ -47,6 +49,10 @@ export function CancelView({ locale, dict }: Props) {
     try {
       await api.cancellations.create(reason.trim());
       setReason('');
+      toast.success(
+        'Cancellation requested',
+        'Our team will contact you within 2 business days.',
+      );
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t(dict, 'common.error'));
@@ -60,6 +66,7 @@ export function CancelView({ locale, dict }: Props) {
     setError(null);
     try {
       await api.cancellations.withdraw(id);
+      toast.info('Request withdrawn');
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t(dict, 'common.error'));

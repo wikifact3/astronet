@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, ApiError, type CurrentSubscription } from '@/lib/api';
 import { t, type Dict } from '@/lib/i18n';
+import { useToast } from '@/components/toast/ToastProvider';
 
 interface Props {
   dict: Dict;
@@ -15,6 +16,7 @@ export function GraceCard({ dict, sub, onRefresh }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
   const { usedThisYear, maxPerYear, remaining } = sub.gracePeriod;
   const canUse = remaining > 0;
 
@@ -22,10 +24,16 @@ export function GraceCard({ dict, sub, onRefresh }: Props) {
     setBusy(true);
     setError(null);
     try {
-      await api.subscriptions.useGrace(sub.id);
+      const res = await api.subscriptions.useGrace(sub.id);
+      toast.success(
+        'Promise to Pay applied',
+        `Validity extended to ${res.newValidityEnd}. ${res.remaining} use${res.remaining === 1 ? '' : 's'} remaining this year.`,
+      );
       onRefresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to apply');
+      const msg = err instanceof ApiError ? err.message : 'Failed to apply';
+      setError(msg);
+      toast.error('Could not apply', msg);
     } finally {
       setBusy(false);
     }

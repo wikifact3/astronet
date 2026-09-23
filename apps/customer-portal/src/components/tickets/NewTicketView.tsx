@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { api, ApiError, type TicketCategory } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { t, type Dict, type Locale } from '@/lib/i18n';
+import { useToast } from '@/components/toast/ToastProvider';
 
 const CATEGORIES: TicketCategory[] = [
   'connectivity',
@@ -23,6 +24,7 @@ interface Props {
 export function NewTicketView({ locale, dict }: Props) {
   const router = useRouter();
   const { user, ready } = useAuth();
+  const toast = useToast();
 
   const [category, setCategory] = useState<TicketCategory>('connectivity');
   const [subject, setSubject] = useState('');
@@ -50,10 +52,12 @@ export function NewTicketView({ locale, dict }: Props) {
         subject: subject.trim(),
         description: description.trim(),
       });
+      toast.success('Ticket created', 'Our team will respond within 24 hours.');
       router.replace(`/${locale}/tickets/${ticket.id}`);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : t(dict, 'common.error');
       setError(msg);
+      toast.error('Could not create ticket', msg);
       setBusy(false);
     }
   }

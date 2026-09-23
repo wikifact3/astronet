@@ -11,6 +11,7 @@ import {
 } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { t, type Dict, type Locale } from '@/lib/i18n';
+import { useToast } from '@/components/toast/ToastProvider';
 
 interface Props {
   locale: Locale;
@@ -33,6 +34,7 @@ const MAX_POLL_ATTEMPTS = 30; // 60 seconds
 export function KycView({ locale, dict }: Props) {
   const router = useRouter();
   const { user, ready } = useAuth();
+  const toast = useToast();
 
   const [documents, setDocuments] = useState<KycDocument[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -127,11 +129,16 @@ export function KycView({ locale, dict }: Props) {
       await api.kyc.upload(session.id, selectedFile);
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
+      toast.success(
+        'Document uploaded',
+        'Scanning now. This page updates automatically.',
+      );
       await load();
     } catch (err) {
       const msg =
         err instanceof ApiError ? err.message : t(dict, 'kyc.errors.uploadFailed');
       setError(msg);
+      toast.error('Upload failed', msg);
     } finally {
       setBusy(false);
     }

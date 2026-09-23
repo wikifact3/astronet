@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { api, ApiError, type TicketDetail } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { t, type Dict, type Locale } from '@/lib/i18n';
+import { useToast } from '@/components/toast/ToastProvider';
 
 interface Props {
   locale: Locale;
@@ -16,6 +17,7 @@ interface Props {
 export function TicketDetailView({ locale, dict, ticketId }: Props) {
   const router = useRouter();
   const { user, ready } = useAuth();
+  const toast = useToast();
 
   const [ticket, setTicket] = useState<TicketDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -53,6 +55,7 @@ export function TicketDetailView({ locale, dict, ticketId }: Props) {
       const updated = await api.tickets.addMessage(ticketId, reply.trim());
       setTicket(updated);
       setReply('');
+      toast.success('Reply sent');
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : t(dict, 'common.error');
       setError(msg);
@@ -68,6 +71,7 @@ export function TicketDetailView({ locale, dict, ticketId }: Props) {
     try {
       const updated = await api.tickets.reopen(ticketId);
       setTicket(updated);
+      toast.success('Ticket reopened', 'Our team will follow up shortly.');
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : t(dict, 'common.error');
       setError(msg);
