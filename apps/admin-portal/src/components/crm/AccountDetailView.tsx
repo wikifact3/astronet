@@ -9,6 +9,7 @@ import {
   type AccountStatus,
 } from '@/lib/api';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useToast } from '@/components/toast/ToastProvider';
 
 const ALLOWED_TRANSITIONS: Record<AccountStatus, AccountStatus[]> = {
   lead: ['kyc_pending', 'churned'],
@@ -33,6 +34,7 @@ const ALL_STATUSES: AccountStatus[] = [
 export function AccountDetailView({ accountId }: { accountId: string }) {
   const router = useRouter();
   const { staff, ready } = useAdminAuth();
+  const toast = useToast();
 
   const [account, setAccount] = useState<AccountDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -72,15 +74,21 @@ export function AccountDetailView({ accountId }: { accountId: string }) {
     setSubmitting(true);
     setError(null);
     try {
+      const previousStatus = account.status;
       const updated = await api.adminCrm.transition(accountId, {
         toStatus,
         reason: reason.trim() || undefined,
       });
       setAccount(updated);
       setReason('');
+      toast.success(
+        'Status updated',
+        `${previousStatus.replace(/_/g, ' ')} → ${toStatus.replace(/_/g, ' ')}`,
+      );
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'Failed to transition';
       setError(msg);
+      toast.error('Transition failed', msg);
     } finally {
       setSubmitting(false);
     }

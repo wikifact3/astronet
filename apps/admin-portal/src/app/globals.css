@@ -49,3 +49,18 @@
     @apply px-4 py-3 text-sm text-admin-800;
   }
 }
+@layer utilities {
+  @keyframes toast-in-top {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-toast-in-top {
+    animation: toast-in-top 200ms ease-out both;
+  }
+}

@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useToast } from '@/components/toast/ToastProvider';
 
 export function AdminLoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const { staff, ready, login } = useAdminAuth();
+  const toast = useToast();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,10 +33,15 @@ export function AdminLoginForm() {
     try {
       const result = await api.adminAuth.login(email, password);
       login(result);
+      toast.success(
+        `Welcome, ${result.staff.fullName.split(' ')[0]}`,
+        `Signed in as ${result.staff.role}`,
+      );
       router.replace(next);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'Something went wrong';
       setError(msg);
+      toast.error('Sign in failed', msg);
       setBusy(false);
     }
   }

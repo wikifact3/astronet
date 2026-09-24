@@ -8,6 +8,7 @@ import {
   type LeadStatus,
 } from '@/lib/api';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useToast } from '@/components/toast/ToastProvider';
 
 const FILTERS: { key: LeadStatus | 'all'; label: string }[] = [
   { key: 'submitted', label: 'Submitted' },
@@ -21,6 +22,7 @@ const FILTERS: { key: LeadStatus | 'all'; label: string }[] = [
 export function LeadsListView() {
   const router = useRouter();
   const { staff, ready } = useAdminAuth();
+  const toast = useToast();
   const [filter, setFilter] = useState<LeadStatus | 'all'>('submitted');
   const [search, setSearch] = useState('');
   const [leads, setLeads] = useState<AdminLead[] | null>(null);
@@ -54,14 +56,21 @@ export function LeadsListView() {
     void load();
   }, [ready, staff, load]);
 
-  async function action(id: string, fn: () => Promise<unknown>) {
+  async function action(
+    id: string,
+    fn: () => Promise<unknown>,
+    successMsg: string,
+  ) {
     setBusy(id);
     setError(null);
     try {
       await fn();
+      toast.success(successMsg);
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Action failed');
+      const msg = err instanceof ApiError ? err.message : 'Action failed';
+      setError(msg);
+      toast.error('Action failed', msg);
     } finally {
       setBusy(null);
     }
@@ -181,7 +190,7 @@ export function LeadsListView() {
                             <button
                               className="text-xs font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50"
                               disabled={busy === l.id}
-                              onClick={() => action(l.id, () => api.adminLeads.verify(l.id))}
+                              onClick={() => action(l.id, () => api.adminLeads.verify(l.id), 'Lead verified')}
                             >
                               Verify
                             </button>
@@ -191,7 +200,7 @@ export function LeadsListView() {
                                   className="text-xs font-medium text-green-700 hover:text-green-800 disabled:opacity-50"
                                   disabled={busy === l.id}
                                   onClick={() =>
-                                    action(l.id, () => api.adminLeads.promote(l.id))
+                                    action(l.id, () => api.adminLeads.promote(l.id), 'Lead promoted to account')
                                   }
                                 >
                                   Promote
@@ -200,7 +209,7 @@ export function LeadsListView() {
                                   className="text-xs font-medium text-red-600 hover:text-red-700 disabled:opacity-50"
                                   disabled={busy === l.id}
                                   onClick={() =>
-                                    action(l.id, () => api.adminLeads.reject(l.id))
+                                    action(l.id, () => api.adminLeads.reject(l.id), 'Lead rejected')
                                   }
                                 >
                                   Reject

@@ -1,5 +1,6 @@
 import { AdminAuthProvider } from '@/hooks/useAdminAuth';
 import { AdminShell } from '@/components/layout/AdminShell';
+import { ToastProvider } from '@/components/toast/ToastProvider';
 
 export default function AdminLayout({
   children,
@@ -8,7 +9,9 @@ export default function AdminLayout({
 }) {
   return (
     <AdminAuthProvider>
-      <AdminShell>{children}</AdminShell>
+      <ToastProvider>
+        <AdminShell>{children}</AdminShell>
+      </ToastProvider>
     </AdminAuthProvider>
   );
 }

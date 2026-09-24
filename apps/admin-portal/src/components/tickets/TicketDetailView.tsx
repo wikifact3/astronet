@@ -10,6 +10,7 @@ import {
   type TicketStatus,
 } from '@/lib/api';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useToast } from '@/components/toast/ToastProvider';
 
 const STATUS_OPTIONS: { value: TicketStatus; label: string }[] = [
   { value: 'open', label: 'Open' },
@@ -23,6 +24,7 @@ const STATUS_OPTIONS: { value: TicketStatus; label: string }[] = [
 export function TicketDetailView({ ticketId }: { ticketId: string }) {
   const router = useRouter();
   const { staff, ready } = useAdminAuth();
+  const toast = useToast();
 
   const [ticket, setTicket] = useState<AdminTicketDetail | null>(null);
   const [assignable, setAssignable] = useState<AssignableStaff[]>([]);
@@ -84,6 +86,7 @@ export function TicketDetailView({ ticketId }: { ticketId: string }) {
       const t = await api.adminTickets.assign(ticketId, assignTo);
       setTicket(t);
       setAssignTo('');
+      toast.success('Ticket assigned', `Assigned to ${t.assignedToName ?? 'staff'}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to assign');
     } finally {
@@ -97,6 +100,10 @@ export function TicketDetailView({ ticketId }: { ticketId: string }) {
     try {
       const t = await api.adminTickets.updateStatus(ticketId, newStatus);
       setTicket(t);
+      toast.success(
+        'Status updated',
+        `Now ${newStatus.replace(/_/g, ' ')}`,
+      );
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to update');
     } finally {

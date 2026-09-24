@@ -50,7 +50,12 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
   // 401 handler → clear
   useEffect(() => {
-    setUnauthorizedHandler(() => clear());
+    setUnauthorizedHandler(() => {
+      clear();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('powerlink:session-expired'));
+      }
+    });
     return () => setUnauthorizedHandler(null);
   }, [clear]);
 

@@ -12,6 +12,7 @@ import {
   type KycReviewReasonCode,
 } from '@/lib/api';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useToast } from '@/components/toast/ToastProvider';
 
 const REASON_CODES: {
   value: KycReviewReasonCode;
@@ -30,6 +31,7 @@ const REASON_CODES: {
 export function KycDetailView({ documentId }: { documentId: string }) {
   const router = useRouter();
   const { staff, ready } = useAdminAuth();
+  const toast = useToast();
 
   const [doc, setDoc] = useState<KycDetail | null>(null);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
@@ -125,9 +127,16 @@ export function KycDetailView({ documentId }: { documentId: string }) {
         notes: notes.trim() || undefined,
       });
       setDoc(updated);
+      toast.success(
+        action === 'approve' ? 'Document approved' : 'Document rejected',
+        action === 'approve'
+          ? 'The customer has been notified.'
+          : `Reason: ${reasonCode.replace(/_/g, ' ')}`,
+      );
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'Failed to submit review';
       setError(msg);
+      toast.error('Review failed', msg);
     } finally {
       setSubmitting(false);
     }

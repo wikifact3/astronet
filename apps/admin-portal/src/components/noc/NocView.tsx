@@ -10,10 +10,12 @@ import {
   type WardGroup,
 } from '@/lib/api';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useToast } from '@/components/toast/ToastProvider';
 
 export function NocView() {
   const router = useRouter();
   const { staff, ready } = useAdminAuth();
+  const toast = useToast();
 
   const [groups, setGroups] = useState<WardGroup[] | null>(null);
   const [technicians, setTechnicians] = useState<TechnicianLoad[] | null>(null);
@@ -222,6 +224,7 @@ function BroadcastPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ recipients: number } | null>(null);
+  const toast = useToast();
 
   function toggleWard(w: string) {
     setSelectedWards((prev) =>
@@ -241,9 +244,15 @@ function BroadcastPanel({
         category,
       });
       setResult({ recipients: res.recipients });
+      toast.success(
+        'Broadcast sent',
+        `Delivered to ${res.recipients} recipient${res.recipients === 1 ? '' : 's'}`,
+      );
       onSent();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to send');
+      const msg = err instanceof ApiError ? err.message : 'Failed to send';
+      setError(msg);
+      toast.error('Broadcast failed', msg);
     } finally {
       setBusy(false);
     }

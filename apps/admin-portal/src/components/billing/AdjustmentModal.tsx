@@ -6,6 +6,7 @@ import {
   type AdminInvoiceRow,
   type AdjustmentKind,
 } from '@/lib/api';
+import { useToast } from '@/components/toast/ToastProvider';
 
 interface Props {
   invoice: AdminInvoiceRow;
@@ -19,6 +20,7 @@ export function AdjustmentModal({ invoice, kind, onClose, onSubmitted }: Props) 
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
 
   const parsed = parseFloat(amount);
   const canSubmit =
@@ -32,16 +34,26 @@ export function AdjustmentModal({ invoice, kind, onClose, onSubmitted }: Props) 
     setBusy(true);
     setError(null);
     try {
-      await api.adminBilling.adjust({
+      const res = await api.adminBilling.adjust({
         accountId: invoice.accountId,
         kind,
         amount: parsed,
         reason: reason.trim(),
         originalInvoiceId: kind === 'refund' ? invoice.id : undefined,
       });
+      toast.success(
+        kind === 'charge'
+          ? 'Charge added'
+          : kind === 'credit'
+            ? 'Credit issued'
+            : 'Refund issued',
+        `${res.invoiceNumber} · Rs. ${parsed.toLocaleString('en-NP')}`,
+      );
       onSubmitted();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to submit');
+      const msg = err instanceof ApiError ? err.message : 'Failed to submit';
+      setError(msg);
+      toast.error('Adjustment failed', msg);
       setBusy(false);
     }
   }
